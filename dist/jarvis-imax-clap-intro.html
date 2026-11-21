@@ -1,0 +1,1846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JARVIS MARK 85 — Photorealistic GPU Shader Hologram</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <style>
+    :root {
+      --bg: #010207;
+      --glass: rgba(5, 10, 22, 0.72);
+      --border: rgba(56, 189, 248, 0.25);
+    }
+    html, body {
+      margin: 0; padding: 0; width: 100%; height: 100%;
+      overflow: hidden; background: var(--bg); color: #f1f5f9;
+      font-family: Inter, system-ui, -apple-system, sans-serif;
+    }
+    .glass {
+      background: var(--glass);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid var(--border);
+    }
+    #canvas-root { position: fixed; inset: 0; width: 100%; height: 100%; touch-action: none; }
+    .cinema-vignette { position: fixed; inset: 0; pointer-events: none; z-index: 10; background: radial-gradient(ellipse at center, transparent 58%, rgba(1, 2, 7, 0.72) 100%); }
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-thumb { background: rgba(56, 189, 248, 0.35); border-radius: 999px; }
+  </style>
+</head>
+<body>
+  <div id="canvas-root" aria-label="Jarvis Photorealistic GPU Shader Hologram"></div>
+  <div class="cinema-vignette"></div>
+  <!-- Pitch-Black Clap-Trigger Standby Curtain (Screen stays pure black until CLAP!) -->
+  <div id="clap-curtain" class="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center cursor-pointer select-none transition-opacity duration-700">
+    <div id="clap-core" class="relative w-16 h-16 flex items-center justify-center">
+      <span class="absolute inset-0 rounded-full border border-cyan-400/25 animate-ping"></span>
+      <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_22px_#22d3ee]"></span>
+    </div>
+    <div id="clap-status" class="mt-6 text-[10px] tracking-[0.32em] uppercase text-cyan-300/50 font-medium">CLAP OR TAP TO IGNITE</div>
+    <button id="btn-enable-mic-clap" type="button" class="mt-4 px-3 py-1 rounded-full border border-cyan-400/25 bg-cyan-950/30 text-[10px] tracking-widest uppercase text-cyan-300/75 hover:border-cyan-400 hover:text-cyan-200 transition cursor-pointer">🎙 Arm Live Mic Clap</button>
+  </div>
+  <!-- Blinding Big-Bang Ignition Flash Veil -->
+    <!-- Cinema 2.39:1 Widescreen Anamorphic Letterbox Bars (Active during 6.5s VFX Intro) -->
+  <div id="lb-top" class="fixed top-0 left-0 right-0 h-0 bg-black z-40 pointer-events-none transition-all duration-1000"></div>
+  <div id="lb-bot" class="fixed bottom-0 left-0 right-0 h-0 bg-black z-40 pointer-events-none transition-all duration-1000"></div>
+  <div id="bang-flash" class="fixed inset-0 z-40 pointer-events-none bg-white opacity-0 transition-opacity duration-300"></div>
+
+
+  <!-- Ultra-Clean Vital Tony Stark Header -->
+  <header id="main-header" class="fixed top-3 left-3 right-3 z-30 flex items-center justify-between gap-2 pointer-events-none opacity-0 transition-opacity duration-1000">
+    <div class="pointer-events-auto glass rounded-full px-3 py-1 flex items-center gap-2 shadow-[0_0_28px_rgba(34,211,238,0.18)]">
+      <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_10px_#22d3ee]"></span>
+      <span class="text-xs font-semibold tracking-[0.18em] text-white">JARVIS</span>
+      <div class="flex items-center bg-black/45 rounded-full p-0.5 border border-white/10 ml-1">
+        <button id="stage-solar" type="button" class="px-2.5 py-0.5 rounded-full text-[10.5px] font-semibold bg-cyan-400 text-slate-950 transition cursor-pointer">Solar</button>
+        <button id="stage-human" type="button" class="px-2.5 py-0.5 rounded-full text-[10.5px] font-semibold text-slate-300 hover:text-white transition cursor-pointer">Human</button>
+      </div>
+      <span id="view-mode-badge" class="hidden md:inline text-[10.5px] font-medium text-cyan-300/90 border-l border-cyan-400/25 pl-2">Orbit</span>
+    </div>
+
+    <div class="pointer-events-auto flex items-center gap-1.5 flex-wrap justify-end">
+      <button id="btn-voice" type="button" title="Voice Command (Strict Voice-Only Talk-Back)" class="rounded-full px-3 py-1.5 text-[11px] font-semibold bg-cyan-400 text-slate-950 hover:bg-cyan-300 transition cursor-pointer flex items-center gap-1.5 shadow-[0_0_18px_rgba(34,211,238,0.35)]">
+        <span class="w-1.5 h-1.5 rounded-full bg-slate-950"></span>
+        <span id="voice-btn-label">Voice</span>
+      </button>
+      <button id="btn-cycle-view" type="button" title="Cycle Orbit / 3D Core / JWST Infrared" class="glass rounded-full px-2.5 py-1.5 text-[11px] font-medium text-slate-200 hover:border-cyan-400 transition cursor-pointer">View</button>
+      <button id="btn-physics" type="button" title="Einstein Spacetime Gravity Well + Goldilocks Zone" class="glass rounded-full px-2.5 py-1.5 text-[11px] font-medium text-slate-200 hover:border-cyan-400 transition cursor-pointer">Spacetime</button>
+      <button id="btn-singularity" type="button" title="Collapse Sun into Relativistic Black Hole" class="glass rounded-full px-2.5 py-1.5 text-[11px] font-medium text-fuchsia-300 border-fuchsia-400/35 hover:border-fuchsia-400 transition cursor-pointer">Black Hole</button>
+      <button id="btn-photon" type="button" title="Fire Real-Time Photon Light-Speed Pulse (c)" class="glass rounded-full px-2.5 py-1.5 text-[11px] font-medium text-amber-200 hover:border-amber-400 transition cursor-pointer">Photon c</button>
+      <button id="btn-arm-clap" type="button" title="Arm Blackout Clap Intro for Next Judge" class="glass rounded-full px-2.5 py-1.5 text-[11px] font-medium text-cyan-200 border-cyan-400/35 hover:border-cyan-400 transition cursor-pointer">👏 Intro</button>
+      <button id="btn-cinema" type="button" title="IMAX Auto-Director Flyby Camera" class="glass rounded-full px-2.5 py-1.5 text-[11px] font-medium text-amber-200 border-amber-400/35 hover:border-amber-400 transition cursor-pointer">Cinema</button>
+      <button id="btn-pyramid" type="button" title="4-Sided Pepper's Ghost Hologram Pyramid" class="glass rounded-full px-2.5 py-1.5 text-[11px] font-medium text-slate-200 hover:border-cyan-400 transition cursor-pointer">Pyramid</button>
+      <button id="btn-drawer" type="button" title="Open Astrophysics & Anatomy Dossier" class="glass rounded-full px-2.5 py-1.5 text-[11px] font-medium text-cyan-300 border-cyan-400/40 hover:bg-cyan-400/15 transition cursor-pointer">Dossier</button>
+      <button id="btn-reset" type="button" title="Reset Camera & Simulation" class="glass rounded-full w-8 h-8 flex items-center justify-center text-xs text-slate-200 hover:border-cyan-400 transition cursor-pointer">↺</button>
+    </div>
+  </header>
+
+  <button id="btn-exit-pyramid" type="button" class="hidden fixed top-3 right-3 z-50 glass rounded-full px-3 py-1 text-[11px] text-cyan-300 border-cyan-400/40 cursor-pointer">Exit Pyramid (Esc)</button>
+  <div id="photon-hud" class="hidden fixed top-14 left-1/2 -translate-x-1/2 z-30 glass rounded-full px-4 py-1 text-[11px] text-amber-200 border-amber-400/40 font-mono tracking-wide shadow-[0_0_24px_rgba(251,191,36,0.28)]"></div>
+
+  <!-- Live ECG Waveform Pill (ONLY visible in Stage 2 Human Body mode) -->
+  <div id="ecg-pill" class="hidden fixed bottom-16 left-3 z-30 glass rounded-2xl px-3 py-2 flex items-center gap-2.5 shadow-[0_0_24px_rgba(244,63,94,0.2)]">
+    <div>
+      <div class="text-[9.5px] uppercase tracking-wider text-rose-300 font-semibold">Live ECG</div>
+      <div class="text-sm font-mono font-bold text-white leading-tight"><span id="ecg-bpm-readout">72</span> <span class="text-[10px] text-slate-400">BPM</span></div>
+    </div>
+    <canvas id="ecg-canvas" width="136" height="36" class="rounded bg-black/40 border border-rose-500/20"></canvas>
+  </div>
+
+  <div id="toast" class="hidden fixed top-14 left-1/2 -translate-x-1/2 z-40 glass rounded-full px-4 py-1 text-xs text-cyan-200"></div>
+
+  <!-- Collapsible Right Dossier Drawer (CLOSED on boot for pure hologram clarity) -->
+  <aside id="right-drawer" class="hidden fixed top-14 right-3 bottom-16 z-30 w-[360px] max-w-[calc(100vw-24px)] glass rounded-2xl flex flex-col overflow-hidden shadow-[0_0_44px_rgba(0,0,0,0.7)]">
+    <div class="px-3 py-2.5 border-b border-cyan-400/15 flex items-center justify-between">
+      <div class="flex items-center gap-1">
+        <button id="tab-dossier" type="button" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-cyan-400 text-slate-950 cursor-pointer">Dossier</button>
+        <button id="tab-modes" type="button" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold text-slate-300 hover:bg-white/10 cursor-pointer">Lab</button>
+        <button id="tab-quiz" type="button" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold text-slate-300 hover:bg-white/10 cursor-pointer">Quiz</button>
+        <button id="tab-6hand" type="button" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold text-slate-300 hover:bg-white/10 cursor-pointer">6-Hand</button>
+      </div>
+      <button id="btn-close-drawer" type="button" class="text-slate-400 hover:text-white text-xs px-1.5 py-0.5 rounded cursor-pointer">✕</button>
+    </div>
+    <div id="drawer-content" class="flex-1 overflow-y-auto p-3.5 space-y-3 text-xs"></div>
+  </aside>
+
+  <!-- Bottom Floating Selector & Timeline -->
+  <div id="bottom-bar" class="fixed bottom-3 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center gap-1.5 max-w-[calc(100vw-20px)] opacity-0 transition-opacity duration-1000">
+    <div id="timeline-strip" class="hidden glass rounded-full px-3.5 py-1 flex items-center gap-2.5 w-[480px] max-w-[calc(100vw-24px)]">
+      <span class="text-[10.5px] font-semibold text-cyan-300 shrink-0 font-mono">YR <span id="year-val" class="text-white">2026</span></span>
+      <input id="year-slider" type="range" min="1950" max="2100" value="2026" class="flex-1 accent-cyan-400 cursor-pointer" />
+      <button id="btn-1977" type="button" class="px-2 py-0.5 rounded-full bg-white/10 text-[10px] text-amber-300 hover:bg-white/20 cursor-pointer shrink-0">1977 Voyager</button>
+      <button id="btn-2026" type="button" class="px-2 py-0.5 rounded-full bg-white/10 text-[10px] text-cyan-300 hover:bg-white/20 cursor-pointer shrink-0">2026</button>
+    </div>
+    <nav aria-label="Quick selector" class="glass rounded-full p-1 flex items-center gap-1 overflow-x-auto max-w-[calc(100vw-20px)]" id="quick-bar"></nav>
+  </div>
+
+  <script>
+  (function () {
+    // =========================================================================
+    // 1. VERIFIED NASA PLANETARY FACT SHEET & OPENSTAX ANATOMY DATASETS
+    // =========================================================================
+    const BODIES = [
+      {
+        id: 'sun', typeId: 0, name: 'Sun', full: 'The Sun (Sol)', cls: 'G2V Main-Sequence Star',
+        r: 0.62, scaleR: 0.62, dist: 0, speed: 0, incl: 0, color: 0xffa726, thermal: 0xffffff, lightMin: 0,
+        area: '6.09×10¹² km²', mass: '1.989×10³⁰ kg', g: 274.0, temp: 5500, vel: 220, hz: 126.22,
+        elements: [{ s: 'H', n: 'Hydrogen', p: 73.0, c: '#f59e0b' }, { s: 'He', n: 'Helium', p: 25.0, c: '#fde047' }, { s: 'O/C/Fe', n: 'Heavy', p: 2.0, c: '#f97316' }],
+        layers: [{ n: 'Fusion Core (15M °C)', r: 0.30, c: 0xffffff }, { n: 'Radiative Zone', r: 0.68, c: 0xfde047 }, { n: 'Photosphere', r: 1.0, c: 0xf97316 }],
+        pins: [{ n: 'Active Sunspots', d: 'Magnetic flux depressions (~3,500 °C)' }, { n: 'Coronal Loops', d: 'Superheated plasma arches (>1M °C)' }]
+      },
+      {
+        id: 'mercury', typeId: 1, name: 'Mercury', full: 'Mercury', cls: 'Terrestrial Planet',
+        r: 0.095, scaleR: 0.085, dist: 1.10, speed: 4.15, incl: 7.0, color: 0x9ca3af, thermal: 0xf97316, lightMin: 3.2,
+        area: '7.48×10⁷ km²', mass: '3.30×10²³ kg', g: 3.7, temp: 167, vel: 47.36, hz: 282.54,
+        elements: [{ s: 'Fe', n: 'Iron Core', p: 70.0, c: '#94a3b8' }, { s: 'SiO₂', n: 'Silicate', p: 29.0, c: '#cbd5e1' }, { s: 'O/Na', n: 'Exosphere', p: 1.0, c: '#38bdf8' }],
+        layers: [{ n: 'Iron Core (85% R)', r: 0.82, c: 0xcbd5e1 }, { n: 'Silicate Mantle', r: 0.94, c: 0x9a3412 }, { n: 'Cratered Crust', r: 1.0, c: 0x78716c }],
+        pins: [{ n: 'Caloris Basin', d: '1,550 km ancient impact basin' }, { n: 'Discovery Rupes', d: '650 km tectonic thrust scarp' }]
+      },
+      {
+        id: 'venus', typeId: 2, name: 'Venus', full: 'Venus', cls: 'Terrestrial Planet',
+        r: 0.155, scaleR: 0.155, dist: 1.50, speed: 1.62, incl: 3.39, color: 0xe7c888, thermal: 0xff2200, lightMin: 6.0,
+        area: '4.60×10⁸ km²', mass: '4.87×10²⁴ kg', g: 8.87, temp: 464, vel: 35.02, hz: 221.23,
+        elements: [{ s: 'CO₂', n: 'Carbon Dioxide', p: 96.5, c: '#f59e0b' }, { s: 'N₂', n: 'Nitrogen', p: 3.5, c: '#60a5fa' }],
+        layers: [{ n: 'Iron–Nickel Core', r: 0.52, c: 0xfde047 }, { n: 'Silicate Mantle', r: 0.94, c: 0xdc2626 }, { n: 'Basalt & H₂SO₄ Clouds', r: 1.0, c: 0xe7c888 }],
+        pins: [{ n: 'Maxwell Montes', d: '11 km highest peak on Venus' }, { n: 'Aphrodite Terra', d: 'Equatorial volcanic highland' }]
+      },
+      {
+        id: 'earth', typeId: 3, name: 'Earth', full: 'Earth', cls: 'Terrestrial Ocean World',
+        r: 0.17, scaleR: 0.165, dist: 1.98, speed: 1.0, incl: 0.0, color: 0x2563eb, thermal: 0x22c55e, lightMin: 8.3,
+        area: '5.10×10⁸ km²', mass: '5.97×10²⁴ kg', g: 9.8, temp: 15, vel: 29.78, hz: 194.18,
+        elements: [{ s: 'N₂', n: 'Nitrogen', p: 78.1, c: '#38bdf8' }, { s: 'O₂', n: 'Oxygen', p: 20.9, c: '#22c55e' }, { s: 'Ar/CO₂', n: 'Trace', p: 1.0, c: '#94a3b8' }],
+        layers: [{ n: 'Solid Inner Core', r: 0.22, c: 0xfef08a }, { n: 'Liquid Outer Core', r: 0.55, c: 0xf97316 }, { n: 'Mantle & Ocean Crust', r: 1.0, c: 0x0284c7 }],
+        pins: [{ n: 'Mount Everest', d: '8,849 m highest peak (Himalayas)' }, { n: 'Mariana Trench', d: '10,984 m deepest ocean trench' }]
+      },
+      {
+        id: 'mars', typeId: 4, name: 'Mars', full: 'Mars', cls: 'Terrestrial Planet',
+        r: 0.12, scaleR: 0.115, dist: 2.46, speed: 0.53, incl: 1.85, color: 0xd96b43, thermal: 0x3b82f6, lightMin: 12.7,
+        area: '1.45×10⁸ km²', mass: '6.42×10²³ kg', g: 3.71, temp: -65, vel: 24.07, hz: 144.72,
+        elements: [{ s: 'CO₂', n: 'Carbon Dioxide', p: 95.3, c: '#f97316' }, { s: 'N₂', n: 'Nitrogen', p: 2.6, c: '#60a5fa' }, { s: 'Ar/O₂', n: 'Argon/O₂', p: 2.1, c: '#94a3b8' }],
+        layers: [{ n: 'Liquid Fe–Ni–S Core', r: 0.54, c: 0xfbbf24 }, { n: 'Silicate Mantle', r: 0.95, c: 0xb45309 }, { n: 'Iron-Oxide Crust', r: 1.0, c: 0xc2410c }],
+        pins: [{ n: 'Olympus Mons', d: '21.9 km tallest volcano in Solar System' }, { n: 'Valles Marineris', d: '4,000 km tectonic canyon' }]
+      },
+      {
+        id: 'jupiter', typeId: 5, name: 'Jupiter', full: 'Jupiter', cls: 'Gas Giant',
+        r: 0.39, scaleR: 0.46, dist: 3.35, speed: 0.084, incl: 1.31, color: 0xd6b08a, thermal: 0x6366f1, lightMin: 43.3,
+        area: '6.14×10¹⁰ km²', mass: '1.898×10²⁷ kg', g: 24.79, temp: -110, vel: 13.07, hz: 183.58,
+        elements: [{ s: 'H₂', n: 'Hydrogen', p: 89.8, c: '#fbbf24' }, { s: 'He', n: 'Helium', p: 10.2, c: '#fdba74' }],
+        layers: [{ n: 'Dilute Rock/Ice Core', r: 0.22, c: 0xe2e8f0 }, { n: 'Metallic Hydrogen', r: 0.78, c: 0x38bdf8 }, { n: 'Ammonia Cloud Deck', r: 1.0, c: 0xd6b08a }],
+        pins: [{ n: 'Great Red Spot', d: 'Anticyclonic storm wider than Earth' }, { n: 'Equatorial Jet Belt', d: 'High-speed zonal ammonia clouds' }]
+      },
+      {
+        id: 'saturn', typeId: 6, name: 'Saturn', full: 'Saturn', cls: 'Ringed Gas Giant',
+        r: 0.32, scaleR: 0.39, dist: 4.30, speed: 0.034, incl: 2.49, color: 0xe6cfa2, thermal: 0x4f46e5, rings: true, lightMin: 79.3,
+        area: '4.27×10¹⁰ km²', mass: '5.68×10²⁶ kg', g: 10.44, temp: -140, vel: 9.68, hz: 147.85,
+        elements: [{ s: 'H₂', n: 'Hydrogen', p: 96.3, c: '#fde68a' }, { s: 'He', n: 'Helium', p: 3.25, c: '#f59e0b' }, { s: 'CH₄', n: 'Trace', p: 0.45, c: '#94a3b8' }],
+        layers: [{ n: 'Rock–Ice Core', r: 0.25, c: 0xcbd5e1 }, { n: 'Metallic Hydrogen', r: 0.62, c: 0x60a5fa }, { n: 'Molecular H₂ Envelope', r: 1.0, c: 0xe6cfa2 }],
+        pins: [{ n: 'North Polar Hexagon', d: '29,000 km hexagonal jet wave' }, { n: 'Cassini Division', d: '4,800 km resonance ring gap' }]
+      },
+      {
+        id: 'uranus', typeId: 7, name: 'Uranus', full: 'Uranus', cls: 'Ice Giant',
+        r: 0.21, scaleR: 0.24, dist: 5.15, speed: 0.012, incl: 0.77, color: 0x7dd3fc, thermal: 0x1d4ed8, lightMin: 159.6,
+        area: '8.12×10⁹ km²', mass: '8.68×10²⁵ kg', g: 8.69, temp: -195, vel: 6.8, hz: 207.36,
+        elements: [{ s: 'H₂', n: 'Hydrogen', p: 82.5, c: '#7dd3fc' }, { s: 'He', n: 'Helium', p: 15.2, c: '#bae6fd' }, { s: 'CH₄', n: 'Methane', p: 2.3, c: '#0284c7' }],
+        layers: [{ n: 'Silicate Core', r: 0.24, c: 0x94a3b8 }, { n: 'Superionic Ice Mantle', r: 0.80, c: 0x0ea5e9 }, { n: 'Methane Haze (97.7° tilt)', r: 1.0, c: 0x7dd3fc }],
+        pins: [{ n: 'Polar Hood Haze', d: 'Seasonal methane cloud cap' }, { n: 'Epsilon Ring', d: 'Brightest of 13 narrow dark rings' }]
+      },
+      {
+        id: 'neptune', typeId: 8, name: 'Neptune', full: 'Neptune', cls: 'Ice Giant',
+        r: 0.205, scaleR: 0.23, dist: 5.85, speed: 0.006, incl: 1.77, color: 0x3b82f6, thermal: 0x1e3a8a, lightMin: 249.8,
+        area: '7.62×10⁹ km²', mass: '1.02×10²⁶ kg', g: 11.15, temp: -200, vel: 5.43, hz: 211.44,
+        elements: [{ s: 'H₂', n: 'Hydrogen', p: 80.0, c: '#3b82f6' }, { s: 'He', n: 'Helium', p: 19.0, c: '#60a5fa' }, { s: 'CH₄', n: 'Methane', p: 1.0, c: '#1d4ed8' }],
+        layers: [{ n: 'Rocky–Iron Core', r: 0.26, c: 0xcbd5e1 }, { n: 'Water–Ammonia Mantle', r: 0.82, c: 0x1d4ed8 }, { n: '2,100 km/h Winds', r: 1.0, c: 0x3b82f6 }],
+        pins: [{ n: 'Great Dark Spot', d: 'High-pressure anticyclonic vortex' }, { n: 'Scooter Cloud', d: 'Fast methane cirrus plume' }]
+      },
+      {
+        id: 'pluto', typeId: 9, name: 'Pluto', full: 'Pluto (9th Body)', cls: 'Kuiper Dwarf Planet',
+        r: 0.092, scaleR: 0.07, dist: 6.60, speed: 0.004, incl: 17.16, color: 0xe2e8f0, thermal: 0x312e81, lightMin: 328.0,
+        area: '1.77×10⁷ km²', mass: '1.30×10²² kg', g: 0.62, temp: -229, vel: 4.67, hz: 140.25,
+        elements: [{ s: 'N₂', n: 'Nitrogen Ice', p: 98.0, c: '#cbd5e1' }, { s: 'CH₄', n: 'Methane', p: 1.5, c: '#93c5fd' }, { s: 'CO', n: 'Carbon Monoxide', p: 0.5, c: '#f59e0b' }],
+        layers: [{ n: 'Silicate Core (70%)', r: 0.70, c: 0x78716c }, { n: 'Water-Ice Mantle', r: 0.95, c: 0x38bdf8 }, { n: 'N₂ Glacier Crust', r: 1.0, c: 0xe2e8f0 }],
+        pins: [{ n: 'Sputnik Planitia', d: '1,000 km nitrogen-ice heart glacier' }, { n: 'Wright Mons', d: '4 km tall suspected cryovolcano' }]
+      }
+    ];
+
+    const HUMAN_SYSTEMS = [
+      { id: 'organism', name: 'Bio-Hologram', metric: '11 Systems · 206 Bones', detail: 'Live arterial/venous blood flow, neural action potentials, beating 4-chamber heart, and breathing lungs grounded in OpenStax Anatomy & Physiology 2e.' },
+      { id: 'cell', name: 'Cell + DNA', metric: '10–30 µm · 37T Cells', detail: 'Microscopic eukaryotic cell featuring a live rotating 3D DNA double helix inside the nucleus and ATP-pulsing mitochondria.' },
+      { id: 'heart', name: 'Cardiac Flow', metric: 'SV 70 mL · CO 5.25 L/min', detail: 'Synchronized myocardial contraction driving systemic & pulmonary arterial blood-cell streams with live ECG trace.' },
+      { id: 'brain', name: 'Neural Net', metric: '12 Cranial · 31 Spinal', detail: 'Real-time synaptic impulses racing across the cerebral cortex and descending spinal pathways at up to 120 m/s.' },
+      { id: 'lungs', name: 'Respiration', metric: 'R: 3 Lobes · L: 2 Lobes', detail: 'Rhythmic thoracic expansion across 300 million alveoli separated by a 0.5 µm gas-exchange membrane.' }
+    ];
+
+    const TRAJECTORIES = {
+      venus: { target: 'Venus', dv: '6.0 km/s', days: '146 days' },
+      mars: { target: 'Mars', dv: '5.6 km/s', days: '259 days' },
+      jupiter: { target: 'Jupiter', dv: '14.4 km/s', days: '2.7 yrs' },
+      saturn: { target: 'Saturn', dv: '15.7 km/s', days: '6.0 yrs' },
+      pluto: { target: 'Pluto', dv: '16.2 km/s', days: '9.5 yrs' }
+    };
+
+    const QUIZ = [
+      { q: 'Which planet has 96.5% CO₂ making it 464 °C (hotter than Mercury)?', opts: ['Venus', 'Mars', 'Jupiter'], ans: 0 },
+      { q: 'What is the tallest volcano in the entire Solar System (21.9 km)?', opts: ['Maxwell Montes', 'Olympus Mons', 'Wright Mons'], ans: 1 },
+      { q: 'What is Pluto’s orbital inclination angle relative to the ecliptic?', opts: ['1.85°', '7.00°', '17.16°'], ans: 2 },
+      { q: 'What is normal resting cardiac output in a healthy adult human?', opts: ['2.10 L/min', '5.25 L/min', '11.4 L/min'], ans: 1 }
+    ];
+
+    const state = {
+      stage: 'solar', humanFocus: 'organism', heartBpm: 72, selectedId: 'earth',
+      viewMode: 'standard', singularity: false, gravityWell: false, habitableZone: false,
+      sizeScaleMode: false, pyramidMode: false, explodeTarget: 0, explodeCurr: 0,
+      timelineOpen: false, year: 2026, visitorKg: 60, resonanceOn: false,
+      trajectoryTarget: null, photonActive: false, photonRadius: 0,
+      drawerTab: 'dossier', drawerOpen: false, quizIdx: 0, quizChoice: 0, quizScore: 0, quizFeedback: '',
+      rotX: 0.34, rotY: 0.28, zoom: 1.0, cinemaMode: false, introPhase: 'standby', introTime: 0
+    };
+
+    // =========================================================================
+    // 2. STRICT VOICE-ONLY TALK-BACK + ORBITAL RESONANCE SYNTH
+    // =========================================================================
+    let audioCtx = null, resOscs = [], resGain = null;
+    function toggleOrbitalResonance() {
+      state.resonanceOn = !state.resonanceOn;
+      resOscs.forEach((o) => { try { o.stop(); o.disconnect(); } catch (_e) {} });
+      resOscs = [];
+      if (resGain) { try { resGain.disconnect(); } catch (_e) {} resGain = null; }
+      if (state.resonanceOn) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (AC) {
+          if (!audioCtx) audioCtx = new AC();
+          if (audioCtx.state === 'suspended') audioCtx.resume();
+          resGain = audioCtx.createGain();
+          resGain.gain.setValueAtTime(0.036, audioCtx.currentTime);
+          resGain.connect(audioCtx.destination);
+          [126.22, 194.18, 221.23, 282.54].forEach((hz, i) => {
+            const osc = audioCtx.createOscillator();
+            osc.type = i % 2 === 0 ? 'sine' : 'triangle';
+            osc.frequency.setValueAtTime(hz, audioCtx.currentTime);
+            const g = audioCtx.createGain();
+            g.gain.setValueAtTime(0.2 / (i + 1), audioCtx.currentTime);
+            osc.connect(g); g.connect(resGain); osc.start();
+            resOscs.push(osc);
+          });
+        }
+      }
+      renderDrawer();
+    }
+
+    function speakVoiceOnlyReply(text) {
+      try {
+        if (window.speechSynthesis && text) {
+          window.speechSynthesis.cancel();
+          const u = new SpeechSynthesisUtterance(text);
+          u.lang = 'en-IN'; u.rate = 1.0;
+          window.speechSynthesis.speak(u);
+        }
+      } catch (_e) {}
+    }
+
+    let toastTimer = null;
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg; t.classList.remove('hidden');
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => t.classList.add('hidden'), 2800);
+    }
+
+    // =========================================================================
+    // 3. INFINITE-RESOLUTION PHOTOREALISTIC GPU GLSL SHADER LIBRARY
+    //    (Multi-Octave 3D fBM + Domain Warping + Day/Night Terminator + City Lights
+    //     + Specular Ocean Glint + Rayleigh Fresnel Atmosphere + Cassini Ring Shadows)
+    // =========================================================================
+    const GLSL_NOISE = `
+      float hash(vec3 p) {
+        p = fract(p * 0.3183099 + 0.1);
+        p *= 17.0;
+        return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
+      }
+      float noise(vec3 x) {
+        vec3 i = floor(x);
+        vec3 f = fract(x);
+        f = f * f * (3.0 - 2.0 * f);
+        return mix(
+          mix(mix(hash(i + vec3(0,0,0)), hash(i + vec3(1,0,0)), f.x),
+              mix(hash(i + vec3(0,1,0)), hash(i + vec3(1,1,0)), f.x), f.y),
+          mix(mix(hash(i + vec3(0,0,1)), hash(i + vec3(1,0,1)), f.x),
+              mix(hash(i + vec3(0,1,1)), hash(i + vec3(1,1,1)), f.x), f.y),
+          f.z
+        );
+      }
+      float fbm(vec3 p) {
+        float v = 0.0; float a = 0.5;
+        for (int i = 0; i < 4; i++) {
+          v += a * noise(p);
+          p = p * 2.04 + vec3(1.7, 9.2, 3.4);
+          a *= 0.5;
+        }
+        return v;
+      }
+      float ridged(vec3 p) {
+        float v = 0.0; float a = 0.5;
+        for (int i = 0; i < 3; i++) {
+          float n = 1.0 - abs(noise(p) * 2.0 - 1.0);
+          v += a * n * n;
+          p = p * 2.1 + vec3(2.3, 4.1, 1.9);
+          a *= 0.5;
+        }
+        return v;
+      }
+    `;
+
+    const PLANET_VERT = `
+      varying vec3 vObjPos;
+      varying vec3 vWorldPos;
+      varying vec3 vWorldNormal;
+      varying vec3 vViewNormal;
+      void main() {
+        vObjPos = normalize(position);
+        vec4 wp = modelMatrix * vec4(position, 1.0);
+        vWorldPos = wp.xyz;
+        vWorldNormal = normalize(mat3(modelMatrix) * normal);
+        vViewNormal = normalize(normalMatrix * normal);
+        gl_Position = projectionMatrix * viewMatrix * wp;
+      }
+    `;
+
+    function createPlanetShaderMaterial(typeId, thermalHex) {
+      return new THREE.ShaderMaterial({
+        uniforms: {
+          uTime: { value: 0 },
+          uSunWorldPos: { value: new THREE.Vector3(0, 0, 0) },
+          uInfrared: { value: 0.0 },
+          uThermalColor: { value: new THREE.Color(thermalHex) }
+        },
+        vertexShader: PLANET_VERT,
+        fragmentShader: `
+          uniform float uTime;
+          #define uType ${typeId}
+          uniform vec3 uSunWorldPos;
+          uniform float uInfrared;
+          uniform vec3 uThermalColor;
+          varying vec3 vObjPos;
+          varying vec3 vWorldPos;
+          varying vec3 vWorldNormal;
+          varying vec3 vViewNormal;
+          ${GLSL_NOISE}
+
+          void main() {
+            vec3 p = vObjPos;
+            vec3 N = normalize(vWorldNormal);
+            vec3 L = normalize(uSunWorldPos - vWorldPos);
+            vec3 V = normalize(cameraPosition - vWorldPos);
+            float NdotL = dot(N, L);
+            float day = smoothstep(-0.18, 0.22, NdotL);
+            float diffuse = max(0.0, NdotL);
+            float fresnel = pow(1.0 - max(0.0, dot(N, V)), 3.0);
+
+            // JWST INFRARED THERMAL VISION OVERRIDE
+            if (uInfrared > 0.5) {
+              float heat = fbm(p * 6.0 + vec3(uTime * 0.1));
+              vec3 ir = mix(uThermalColor * 0.35, uThermalColor * 1.45, heat);
+              ir += uThermalColor * fresnel * 0.9;
+              gl_FragColor = vec4(ir, 1.0);
+              return;
+            }
+
+            // 0: THE SUN — 6-Octave Domain-Warped Boiling Plasma + Sunspots + Limb Darkening
+            if (uType == 0) {
+              vec3 q = p * 4.5 + vec3(uTime * 0.14, -uTime * 0.09, uTime * 0.11);
+              float warp = fbm(q);
+              float gran = fbm(q * 2.1 + vec3(warp * 2.4));
+              float spots = smoothstep(0.66, 0.78, fbm(p * 3.2 - vec3(uTime * 0.05)));
+              vec3 col = mix(vec3(0.82, 0.14, 0.01), vec3(1.0, 0.56, 0.04), smoothstep(0.25, 0.62, gran));
+              col = mix(col, vec3(1.0, 0.96, 0.78), smoothstep(0.62, 0.88, gran));
+              col = mix(col, vec3(0.18, 0.03, 0.0), spots * 0.75);
+              float limb = pow(max(0.0, dot(N, V)), 0.45);
+              col *= mix(0.62, 1.15, limb);
+              col += vec3(1.0, 0.5, 0.08) * fresnel * 1.15;
+              gl_FragColor = vec4(col, 1.0);
+              return;
+            }
+
+            vec3 albedo = vec3(0.5);
+            vec3 atmoColor = vec3(0.0);
+            float atmoStrength = 0.0;
+            float spec = 0.0;
+            vec3 nightEmissive = vec3(0.0);
+
+            // 1: MERCURY — High-Contrast Cratered Silicate Regolith
+            if (uType == 1) {
+              float base = fbm(p * 5.0);
+              float crat = ridged(p * 11.0);
+              albedo = mix(vec3(0.32, 0.31, 0.30), vec3(0.72, 0.70, 0.67), base * 0.65 + crat * 0.35);
+            }
+            // 2: VENUS — Super-Rotating Swirling Sulfuric Acid Clouds
+            else if (uType == 2) {
+              float swirl = fbm(vec3(p.x * 3.0, p.y * 6.5, p.z * 3.0) + vec3(uTime * 0.12, 0.0, 0.0));
+              float bands = fbm(vec3(p.x * 2.2 + swirl * 1.6, p.y * 8.0 + swirl * 0.8, p.z * 2.2));
+              albedo = mix(vec3(0.76, 0.52, 0.20), vec3(0.98, 0.89, 0.66), bands);
+              atmoColor = vec3(1.0, 0.82, 0.42); atmoStrength = 0.72;
+            }
+            // 3: EARTH — Continents, Specular Oceans, Coastal Shelves, Ice Caps & Night City Lights!
+            else if (uType == 3) {
+              float elev = fbm(p * 3.4 + vec3(0.4, 0.1, 0.8));
+              float detail = ridged(p * 12.0);
+              float lat = abs(p.y);
+              float isLand = smoothstep(0.49, 0.53, elev);
+              // Deep sapphire ocean + turquoise shallow coast
+              vec3 deepSea = vec3(0.02, 0.12, 0.34);
+              vec3 shallowSea = vec3(0.04, 0.38, 0.56);
+              vec3 ocean = mix(deepSea, shallowSea, smoothstep(0.38, 0.50, elev));
+              // Forests -> Desert -> Mountain Snow
+              vec3 forest = vec3(0.09, 0.34, 0.14);
+              vec3 desert = vec3(0.68, 0.58, 0.36);
+              float aridity = smoothstep(0.35, 0.68, fbm(p * 4.5 + vec3(5.2)));
+              vec3 land = mix(forest, desert, aridity * (1.0 - smoothstep(0.55, 0.85, lat)));
+              land = mix(land, vec3(0.86, 0.88, 0.90), smoothstep(0.68, 0.84, elev + detail * 0.18));
+              albedo = mix(ocean, land, isLand);
+              // Polar Ice Caps
+              float ice = smoothstep(0.76, 0.86, lat + (elev - 0.5) * 0.12);
+              albedo = mix(albedo, vec3(0.94, 0.97, 1.0), ice);
+              // Sun Specular Ocean Glint
+              vec3 H = normalize(L + V);
+              spec = (1.0 - isLand) * (1.0 - ice) * pow(max(0.0, dot(N, H)), 36.0) * 0.95;
+              // Night-side Golden City Lights along warm continental coasts!
+              float cityMask = isLand * (1.0 - ice) * smoothstep(0.50, 0.62, elev) * (1.0 - smoothstep(0.62, 0.72, elev));
+              float citySpark = smoothstep(0.64, 0.78, fbm(p * 28.0));
+              nightEmissive = vec3(1.0, 0.76, 0.32) * cityMask * citySpark * (1.0 - day) * 1.4;
+              atmoColor = vec3(0.22, 0.62, 1.0); atmoStrength = 0.88;
+            }
+            // 4: MARS — Rusty Ochre, Basalt Highlands, Valles Marineris & Polar Ice Caps
+            else if (uType == 4) {
+              float elev = fbm(p * 4.2);
+              float ridge = ridged(p * 9.5);
+              vec3 rust = vec3(0.78, 0.31, 0.14);
+              vec3 ochre = vec3(0.91, 0.52, 0.28);
+              vec3 basalt = vec3(0.36, 0.15, 0.09);
+              albedo = mix(basalt, rust, smoothstep(0.32, 0.58, elev));
+              albedo = mix(albedo, ochre, smoothstep(0.58, 0.82, elev * 0.7 + ridge * 0.3));
+              float polar = smoothstep(0.84, 0.91, abs(p.y) + (elev - 0.5) * 0.08);
+              albedo = mix(albedo, vec3(0.95, 0.93, 0.92), polar);
+              atmoColor = vec3(0.95, 0.48, 0.28); atmoStrength = 0.42;
+            }
+            // 5: JUPITER — Domain-Warped Zonal Ammonia Belts + Swirling Great Red Spot
+            else if (uType == 5) {
+              float turb = fbm(vec3(p.x * 4.0, p.y * 9.0, p.z * 4.0) + vec3(uTime * 0.06, 0.0, 0.0));
+              float yBand = p.y * 14.0 + turb * 2.1;
+              float z1 = sin(yBand) * 0.5 + 0.5;
+              float z2 = sin(yBand * 2.3 + turb * 3.0) * 0.5 + 0.5;
+              vec3 cream = vec3(0.95, 0.88, 0.76);
+              vec3 sienna = vec3(0.72, 0.36, 0.19);
+              vec3 tanCol = vec3(0.82, 0.66, 0.48);
+              albedo = mix(sienna, cream, z1);
+              albedo = mix(albedo, tanCol, z2 * 0.45);
+              // Great Red Spot Anticyclonic Vortex
+              vec3 grsPos = normalize(vec3(0.72, -0.34, 0.60));
+              vec3 d = p - grsPos;
+              float grsDist = length(vec3(d.x * 1.1, d.y * 2.1, d.z * 1.1));
+              float grs = 1.0 - smoothstep(0.11, 0.24, grsDist);
+              float grsSwirl = fbm(p * 18.0 + vec3(uTime * 0.25));
+              albedo = mix(albedo, mix(vec3(0.78, 0.20, 0.08), vec3(0.96, 0.48, 0.24), grsSwirl), grs * 0.92);
+              atmoColor = vec3(0.92, 0.78, 0.58); atmoStrength = 0.38;
+            }
+            // 6: SATURN — Silky Butterscotch Zonal Bands + Polar Hexagon Shimmer
+            else if (uType == 6) {
+              float turb = fbm(vec3(p.x * 2.5, p.y * 8.0, p.z * 2.5));
+              float bands = sin(p.y * 18.0 + turb * 1.2) * 0.5 + 0.5;
+              albedo = mix(vec3(0.76, 0.64, 0.42), vec3(0.96, 0.90, 0.72), bands);
+              albedo = mix(albedo, vec3(0.58, 0.64, 0.66), smoothstep(0.82, 0.95, abs(p.y)));
+              atmoColor = vec3(0.94, 0.86, 0.65); atmoStrength = 0.36;
+            }
+            // 7: URANUS — Silky Cyan-Aquamarine Methane Atmosphere
+            else if (uType == 7) {
+              float band = sin(p.y * 8.0 + fbm(p * 3.0) * 0.5) * 0.5 + 0.5;
+              albedo = mix(vec3(0.36, 0.80, 0.89), vec3(0.72, 0.95, 0.98), band);
+              atmoColor = vec3(0.45, 0.92, 1.0); atmoStrength = 0.62;
+            }
+            // 8: NEPTUNE — Deep Cobalt Storm Bands + Great Dark Spot + White Methane Cirrus
+            else if (uType == 8) {
+              float turb = fbm(vec3(p.x * 4.0, p.y * 10.0, p.z * 4.0) + vec3(uTime * 0.08, 0.0, 0.0));
+              float band = sin(p.y * 13.0 + turb * 1.8) * 0.5 + 0.5;
+              albedo = mix(vec3(0.08, 0.22, 0.68), vec3(0.24, 0.52, 0.96), band);
+              float cirrus = smoothstep(0.72, 0.85, fbm(vec3(p.x * 6.0, p.y * 16.0, p.z * 6.0)));
+              albedo = mix(albedo, vec3(0.92, 0.96, 1.0), cirrus * 0.75);
+              atmoColor = vec3(0.25, 0.55, 1.0); atmoStrength = 0.68;
+            }
+            // 9: PLUTO — Tholin Dark Cthulhu Macula + Bright Heart-Shaped Sputnik Planitia
+            else {
+              float n = fbm(p * 5.0);
+              vec3 tholin = vec3(0.42, 0.22, 0.16);
+              vec3 cryo = vec3(0.84, 0.81, 0.76);
+              albedo = mix(tholin, cryo, smoothstep(0.38, 0.66, n));
+              float heart = 1.0 - smoothstep(0.22, 0.36, length(p - normalize(vec3(0.6, 0.22, 0.76))));
+              albedo = mix(albedo, vec3(0.96, 0.95, 0.92), heart * 0.92);
+              atmoColor = vec3(0.58, 0.82, 1.0); atmoStrength = 0.45;
+            }
+
+            // Per-Pixel 3D Micro-Relief Bump Mapping ONLY on Rocky Worlds (Silky Fluid Clouds on Gas Giants!)
+            float microDiff = diffuse;
+            if (uType == 1 || uType == 4 || uType == 9) {
+              float eps = 0.018;
+              float h0 = noise(p * 14.0);
+              vec3 grad = vec3(
+                noise((p + vec3(eps, 0.0, 0.0)) * 14.0) - h0,
+                noise((p + vec3(0.0, eps, 0.0)) * 14.0) - h0,
+                noise((p + vec3(0.0, 0.0, eps)) * 14.0) - h0
+              ) / eps;
+              vec3 Nb = normalize(N - (grad - N * dot(grad, N)) * 0.19);
+              microDiff = max(0.0, dot(Nb, L));
+            }
+            float terminator = exp(-pow(NdotL * 5.2, 2.0));
+
+            // Physically-based HDR Illumination + Sunset Terminator Scatter + Earth Polar Aurora
+            vec3 lit = albedo * (0.10 + 1.08 * microDiff) + vec3(1.0, 0.96, 0.88) * spec;
+            lit += nightEmissive;
+            lit += atmoColor * fresnel * atmoStrength * (0.18 + 0.92 * day);
+            if (uType == 3) {
+              // Warm Rayleigh sunset along terminator + shimmering emerald Polar Aurora!
+              lit += vec3(0.95, 0.36, 0.12) * terminator * fresnel * 0.45;
+              float auroraRing = exp(-pow((abs(p.y) - 0.80) * 18.0, 2.0));
+              float auroraWave = 0.5 + 0.5 * sin(atan(p.z, p.x) * 6.0 + uTime * 2.2);
+              lit += vec3(0.12, 0.95, 0.58) * auroraRing * auroraWave * (1.0 - day * 0.75) * 0.85;
+            }
+            gl_FragColor = vec4(lit, 1.0);
+          }
+        `
+      });
+    }
+
+    // EARTH INDEPENDENT ROTATING 3D CLOUD SPHERE SHADER
+    const earthCloudMat = new THREE.ShaderMaterial({
+      uniforms: { uTime: { value: 0 }, uSunWorldPos: { value: new THREE.Vector3(0, 0, 0) } },
+      transparent: true, depthWrite: false,
+      vertexShader: PLANET_VERT,
+      fragmentShader: `
+        uniform float uTime;
+        uniform vec3 uSunWorldPos;
+        varying vec3 vObjPos;
+        varying vec3 vWorldPos;
+        varying vec3 vWorldNormal;
+        ${GLSL_NOISE}
+        void main() {
+          vec3 N = normalize(vWorldNormal);
+          vec3 L = normalize(uSunWorldPos - vWorldPos);
+          float diff = max(0.08, dot(N, L));
+          float swirl = fbm(vObjPos * 3.8 + vec3(uTime * 0.035, 0.0, -uTime * 0.02));
+          float c = smoothstep(0.48, 0.76, fbm(vObjPos * 5.2 + vec3(swirl * 1.4)));
+          gl_FragColor = vec4(vec3(0.98, 0.99, 1.0) * diff, c * 0.68);
+        }
+      `
+    });
+
+    // SATURN MULTI-RING CASSINI DIVISION + REAL-TIME 3D PLANET ECLIPSE SHADOW SHADER
+    const saturnRingMat = new THREE.ShaderMaterial({
+      uniforms: {
+        uTime: { value: 0 },
+        uSunWorldPos: { value: new THREE.Vector3(0, 0, 0) },
+        uSaturnWorldPos: { value: new THREE.Vector3(0, 0, 0) },
+        uSaturnRadius: { value: 0.32 }
+      },
+      transparent: true, side: THREE.DoubleSide, depthWrite: false,
+      vertexShader: `
+        varying vec3 vLocalPos;
+        varying vec3 vWorldPos;
+        void main() {
+          vLocalPos = position;
+          vec4 wp = modelMatrix * vec4(position, 1.0);
+          vWorldPos = wp.xyz;
+          gl_Position = projectionMatrix * viewMatrix * wp;
+        }
+      `,
+      fragmentShader: `
+        uniform vec3 uSunWorldPos;
+        uniform vec3 uSaturnWorldPos;
+        uniform float uSaturnRadius;
+        varying vec3 vLocalPos;
+        varying vec3 vWorldPos;
+        void main() {
+          float r = length(vLocalPos.xy);
+          float t = clamp((r - 0.42) / 0.36, 0.0, 1.0);
+          float fine = sin(t * 165.0) * 0.5 + 0.5;
+          float med = sin(t * 42.0) * 0.5 + 0.5;
+          float cassini = 1.0 - smoothstep(0.58, 0.61, t) * (1.0 - smoothstep(0.66, 0.69, t));
+          float encke = 1.0 - smoothstep(0.86, 0.87, t) * (1.0 - smoothstep(0.885, 0.895, t));
+          float density = (0.36 + 0.44 * med + 0.22 * fine) * cassini * encke;
+          density *= smoothstep(0.0, 0.07, t) * (1.0 - smoothstep(0.94, 1.0, t));
+          // Analytical Ray-Sphere Eclipse Shadow from Saturn onto its own Rings
+          vec3 toSun = normalize(uSunWorldPos - vWorldPos);
+          vec3 oc = vWorldPos - uSaturnWorldPos;
+          float bProj = dot(oc, toSun);
+          float shadow = 1.0;
+          if (bProj < 0.0) {
+            float dPerp = length(oc - toSun * bProj);
+            shadow = smoothstep(uSaturnRadius * 0.94, uSaturnRadius * 1.04, dPerp);
+            shadow = mix(0.10, 1.0, shadow);
+          }
+          vec3 col = mix(vec3(0.64, 0.55, 0.40), vec3(0.98, 0.92, 0.78), med * 0.68 + fine * 0.32) * shadow;
+          gl_FragColor = vec4(col, density * 0.90);
+        }
+      `
+    });
+
+    // BLACK HOLE RELATIVISTIC DOPPLER-BEAMED ACCRETION DISK SHADER
+    const accretionMat = new THREE.ShaderMaterial({
+      uniforms: { uTime: { value: 0 } },
+      transparent: true, side: THREE.DoubleSide, depthWrite: false,
+      vertexShader: `
+        varying vec3 vPos;
+        void main() { vPos = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }
+      `,
+      fragmentShader: `
+        uniform float uTime;
+        varying vec3 vPos;
+        ${GLSL_NOISE}
+        void main() {
+          float r = length(vPos.xy);
+          float ang = atan(vPos.y, vPos.x);
+          float t = clamp((r - 0.56) / 1.15, 0.0, 1.0);
+          float spiral = fbm(vec3(cos(ang + t * 5.0 - uTime * 2.2) * 3.0, sin(ang + t * 5.0 - uTime * 2.2) * 3.0, t * 6.0));
+          vec3 innerHot = vec3(1.0, 0.98, 0.88);
+          vec3 midFire = vec3(1.0, 0.45, 0.08);
+          vec3 outerMag = vec3(0.72, 0.14, 0.88);
+          vec3 col = mix(innerHot, midFire, smoothstep(0.0, 0.42, t));
+          col = mix(col, outerMag, smoothstep(0.42, 0.92, t));
+          float alpha = smoothstep(0.0, 0.08, t) * (1.0 - smoothstep(0.65, 1.0, t)) * (0.55 + 0.65 * spiral);
+          gl_FragColor = vec4(col * (1.35 - 0.4 * t), alpha);
+        }
+      `
+    });
+
+    // =========================================================================
+    // 4. THREE.JS SCENE, MILKY WAY NEBULA & DUAL-STAGE WORLD
+    // =========================================================================
+    const root = document.getElementById('canvas-root');
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setClearColor(0x010207, 1);
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.18;
+    root.appendChild(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 220);
+    camera.position.set(0, 2.5, 9.0);
+
+    scene.add(new THREE.HemisphereLight(0xe0f2fe, 0x091022, 0.9));
+    scene.add(new THREE.PointLight(0xfff1cc, 2.8, 45));
+
+    // 4,500-Star Deep-Space Milky Way Starfield + Galactic Dust Band
+    const starCount = 4500;
+    const starPos = new Float32Array(starCount * 3);
+    const starCol = new Float32Array(starCount * 3);
+    for (let i = 0; i < starCount; i++) {
+      const isBand = i < 1600;
+      const r = 26 + Math.random() * 58;
+      const th = Math.random() * Math.PI * 2;
+      const ph = isBand ? (Math.PI / 2 + (Math.random() - 0.5) * 0.26) : Math.acos(2 * Math.random() - 1);
+      starPos[i * 3] = r * Math.sin(ph) * Math.cos(th);
+      starPos[i * 3 + 1] = r * Math.cos(ph);
+      starPos[i * 3 + 2] = r * Math.sin(ph) * Math.sin(th);
+      const t = Math.random();
+      starCol[i * 3] = isBand ? 0.65 + t * 0.35 : (t > 0.7 ? 0.72 : 1.0);
+      starCol[i * 3 + 1] = isBand ? 0.74 + t * 0.24 : 0.9;
+      starCol[i * 3 + 2] = 1.0;
+    }
+    const starGeo = new THREE.BufferGeometry();
+    starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+    starGeo.setAttribute('color', new THREE.BufferAttribute(starCol, 3));
+    const stars = new THREE.Points(starGeo, new THREE.PointsMaterial({ size: 0.085, vertexColors: true, transparent: true, opacity: 0.86 }));
+    scene.add(stars);
+    const nebulaDome = new THREE.Mesh(
+      new THREE.SphereGeometry(95, 32, 24),
+      new THREE.ShaderMaterial({
+        side: THREE.BackSide, depthWrite: false,
+        vertexShader: `varying vec3 vDir; void main() { vDir = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+        fragmentShader: `varying vec3 vDir; void main() { float band = exp(-pow(vDir.y * 3.6 + sin(vDir.x * 2.2) * 0.22, 2.0)); float wisp = 0.5 + 0.5 * sin(vDir.x * 5.0 + vDir.z * 4.0) * cos(vDir.z * 6.0 - vDir.y * 3.0); vec3 col = mix(vec3(0.003, 0.006, 0.020), vec3(0.035, 0.085, 0.21), band * wisp); col += vec3(0.10, 0.025, 0.15) * band * pow(wisp, 2.0) * 0.45; gl_FragColor = vec4(col, 1.0); }`
+      })
+    );
+    scene.add(nebulaDome);
+
+    const worldGroup = new THREE.Group();
+    scene.add(worldGroup);
+
+    // =========================================================================
+    // STAGE 1: PHOTOREALISTIC GPU-SHADER SOLAR SYSTEM
+    // =========================================================================
+    const solarGroup = new THREE.Group();
+    worldGroup.add(solarGroup);
+
+    const bodyMeshes = {};
+    const orbitLines = {};
+    const planetShaderMats = [];
+    let earthMoonPivot = null;
+    let earthCloudMesh = null;
+    let sunHolderRef = null;
+
+    BODIES.forEach((b, idx) => {
+      const holder = new THREE.Group();
+      const shaderMat = createPlanetShaderMaterial(b.typeId, b.thermal);
+      planetShaderMats.push(shaderMat);
+      const outer = new THREE.Mesh(new THREE.SphereGeometry(b.r, 36, 28), shaderMat);
+      holder.add(outer);
+
+      if (b.id === 'sun') {
+        sunHolderRef = holder;
+        const coronaShader = new THREE.ShaderMaterial({
+          uniforms: { uTime: { value: 0 } },
+          transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.BackSide,
+          vertexShader: `varying vec3 vN; varying vec3 vV; void main() { vN = normalize(normalMatrix * normal); vec4 mv = modelViewMatrix * vec4(position, 1.0); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }`,
+          fragmentShader: `varying vec3 vN; varying vec3 vV; void main() { float rim = pow(clamp(dot(-vN, vV), 0.0, 1.0), 3.6); vec3 col = mix(vec3(1.0, 0.36, 0.04), vec3(1.0, 0.86, 0.45), rim); gl_FragColor = vec4(col * 1.35, rim * 0.78); }`
+        });
+        const c1 = new THREE.Mesh(new THREE.SphereGeometry(b.r * 1.62, 36, 28), coronaShader);
+        const c2 = new THREE.Mesh(new THREE.SphereGeometry(b.r * 1.24, 32, 24), new THREE.MeshBasicMaterial({ color: 0xf59e0b, transparent: true, opacity: 0.16, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.BackSide }));
+        const prom = new THREE.Mesh(new THREE.TorusGeometry(b.r * 1.07, 0.015, 8, 56), new THREE.MeshBasicMaterial({ color: 0xfde047, transparent: true, opacity: 0.55 }));
+        prom.rotation.x = 0.85;
+        // Anamorphic IMAX Solar Lens Flare Streak
+        const flareCanvas = document.createElement('canvas');
+        flareCanvas.width = 512; flareCanvas.height = 128;
+        const fctx = flareCanvas.getContext('2d');
+        const rg = fctx.createRadialGradient(256, 64, 2, 256, 64, 62);
+        rg.addColorStop(0, 'rgba(255, 252, 230, 0.95)');
+        rg.addColorStop(0.28, 'rgba(255, 196, 85, 0.45)');
+        rg.addColorStop(1, 'rgba(255, 140, 30, 0)');
+        fctx.fillStyle = rg; fctx.fillRect(0, 0, 512, 128);
+        const hg = fctx.createLinearGradient(0, 64, 512, 64);
+        hg.addColorStop(0, 'rgba(56, 189, 248, 0)');
+        hg.addColorStop(0.32, 'rgba(56, 189, 248, 0.22)');
+        hg.addColorStop(0.5, 'rgba(255, 248, 214, 0.82)');
+        hg.addColorStop(0.68, 'rgba(56, 189, 248, 0.22)');
+        hg.addColorStop(1, 'rgba(56, 189, 248, 0)');
+        fctx.fillStyle = hg; fctx.fillRect(0, 60, 512, 8);
+        const flareTex = new THREE.CanvasTexture(flareCanvas);
+        const flareSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: flareTex, blending: THREE.AdditiveBlending, transparent: true, opacity: 0.78, depthWrite: false }));
+        flareSprite.scale.set(5.4, 1.35, 1.0);
+        holder.add(c1, c2, prom, flareSprite);
+      }
+
+      if (b.id === 'earth') {
+        earthCloudMesh = new THREE.Mesh(new THREE.SphereGeometry(b.r * 1.024, 32, 24), earthCloudMat);
+        const atmo = new THREE.Mesh(new THREE.SphereGeometry(b.r * 1.13, 32, 24), new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.18, side: THREE.BackSide }));
+        const mag = new THREE.Mesh(new THREE.TorusGeometry(b.r * 1.65, 0.008, 8, 32, Math.PI), new THREE.MeshBasicMaterial({ color: 0x22d3ee, transparent: true, opacity: 0.48 }));
+        mag.rotation.z = Math.PI / 2;
+        earthMoonPivot = new THREE.Group();
+        const moon = new THREE.Mesh(new THREE.SphereGeometry(0.04, 20, 16), createPlanetShaderMaterial(1, 0x94a3b8));
+        planetShaderMats.push(moon.material);
+        moon.position.x = 0.34;
+        earthMoonPivot.add(moon);
+        holder.add(earthCloudMesh, atmo, mag, earthMoonPivot);
+      }
+
+      const cutGroup = new THREE.Group();
+      cutGroup.visible = false;
+      b.layers.forEach((L) => {
+        cutGroup.add(new THREE.Mesh(
+          new THREE.SphereGeometry(b.r * L.r, 28, 22, 0, Math.PI * 1.5),
+          new THREE.MeshStandardMaterial({ color: L.c, emissive: L.c, emissiveIntensity: 0.35, side: THREE.DoubleSide })
+        ));
+      });
+      holder.add(cutGroup);
+
+      const pinMesh = new THREE.Mesh(new THREE.ConeGeometry(0.028, 0.09, 8), new THREE.MeshBasicMaterial({ color: 0x22d3ee }));
+      pinMesh.position.set(0, b.r + 0.07, 0); pinMesh.rotation.x = Math.PI; pinMesh.visible = false;
+      holder.add(pinMesh);
+
+      if (b.rings) {
+        const satRing = new THREE.Mesh(new THREE.RingGeometry(0.42, 0.78, 64), saturnRingMat);
+        satRing.rotation.x = Math.PI / 2.22;
+        holder.add(satRing);
+      }
+
+      if (b.dist > 0) {
+        const pts = [];
+        const inclRad = (b.incl * Math.PI) / 180;
+        for (let k = 0; k <= 128; k++) {
+          const a = (k / 128) * Math.PI * 2;
+          pts.push(new THREE.Vector3(Math.cos(a) * b.dist, Math.sin(a) * b.dist * Math.sin(inclRad), Math.sin(a) * b.dist * (b.id === 'pluto' ? 0.88 : 1.0)));
+        }
+        const orbit = new THREE.Line(
+          new THREE.BufferGeometry().setFromPoints(pts),
+          new THREE.LineBasicMaterial({ color: b.id === 'pluto' ? 0x94a3b8 : b.color, transparent: true, opacity: b.id === 'pluto' ? 0.56 : 0.24 })
+        );
+        solarGroup.add(orbit);
+        orbitLines[b.id] = orbit;
+      }
+
+      solarGroup.add(holder);
+      bodyMeshes[b.id] = { holder, outer, shaderMat, cutGroup, pinMesh, data: b, angle: idx * 0.95 };
+    });
+
+    // RELATIVISTIC BLACK HOLE WITH GPU ACCRETION DISK SHADER
+    const blackHoleGroup = new THREE.Group();
+    blackHoleGroup.visible = false;
+    const eventHorizon = new THREE.Mesh(new THREE.SphereGeometry(0.48, 40, 30), new THREE.MeshBasicMaterial({ color: 0x000000 }));
+    const photonSphere = new THREE.Mesh(new THREE.RingGeometry(0.50, 0.56, 72), new THREE.MeshBasicMaterial({ color: 0xfff7ed, side: THREE.DoubleSide, transparent: true, opacity: 0.95 }));
+    const accretionDisk = new THREE.Mesh(new THREE.RingGeometry(0.56, 1.72, 96), accretionMat);
+    accretionDisk.rotation.x = Math.PI / 2.15;
+    const jetMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.45, side: THREE.DoubleSide });
+    const jetNorth = new THREE.Mesh(new THREE.ConeGeometry(0.14, 3.8, 16, 1, true), jetMat);
+    jetNorth.position.y = 2.1; jetNorth.rotation.x = Math.PI;
+    const jetSouth = new THREE.Mesh(new THREE.ConeGeometry(0.14, 3.8, 16, 1, true), jetMat);
+    jetSouth.position.y = -2.1;
+    blackHoleGroup.add(eventHorizon, photonSphere, accretionDisk, jetNorth, jetSouth);
+    solarGroup.add(blackHoleGroup);
+
+    // LIVE SOLAR WIND STREAM
+    const windCount = 900;
+    const windPos = new Float32Array(windCount * 3);
+    const windData = [];
+    for (let i = 0; i < windCount; i++) {
+      const a = Math.random() * Math.PI * 2, r = 0.72 + Math.random() * 5.6, y = (Math.random() - 0.5) * 0.42;
+      windData.push({ a, r, y, sp: 0.55 + Math.random() * 0.65 });
+      windPos[i * 3] = Math.cos(a) * r; windPos[i * 3 + 1] = y; windPos[i * 3 + 2] = Math.sin(a) * r;
+    }
+    const windGeo = new THREE.BufferGeometry();
+    windGeo.setAttribute('position', new THREE.BufferAttribute(windPos, 3));
+    const solarWind = new THREE.Points(windGeo, new THREE.PointsMaterial({ color: 0xfde047, size: 0.022, transparent: true, opacity: 0.45 }));
+    solarGroup.add(solarWind);
+
+    // GALILEAN MOONS (IO, EUROPA, GANYMEDE, CALLISTO) AROUND JUPITER + TITAN AROUND SATURN + CHARON AROUND PLUTO
+    const moonPivots = [];
+    function addOrbitingMoon(parentHolder, radius, dist, speed, colorHex) {
+      const piv = new THREE.Group();
+      const m = new THREE.Mesh(
+        new THREE.SphereGeometry(radius, 12, 10),
+        new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.75 })
+      );
+      m.position.x = dist;
+      piv.add(m);
+      parentHolder.add(piv);
+      moonPivots.push({ piv, speed });
+    }
+    // Jupiter's 4 Galilean Moons
+    addOrbitingMoon(bodyMeshes.jupiter.holder, 0.032, 0.54, 2.6, 0xfde047); // Io
+    addOrbitingMoon(bodyMeshes.jupiter.holder, 0.028, 0.64, 1.9, 0xe0f2fe); // Europa
+    addOrbitingMoon(bodyMeshes.jupiter.holder, 0.040, 0.76, 1.3, 0xcbd5e1); // Ganymede
+    addOrbitingMoon(bodyMeshes.jupiter.holder, 0.036, 0.89, 0.85, 0x94a3b8); // Callisto
+    // Saturn's Titan & Enceladus
+    addOrbitingMoon(bodyMeshes.saturn.holder, 0.038, 0.92, 1.1, 0xf59e0b); // Titan
+    addOrbitingMoon(bodyMeshes.saturn.holder, 0.022, 0.82, 2.2, 0xf8fafc); // Enceladus
+    // Pluto's Charon
+    addOrbitingMoon(bodyMeshes.pluto.holder, 0.042, 0.22, 2.4, 0xcbd5e1); // Charon
+
+    // 4 ADDITIONAL IAU DWARF PLANETS (CERES, HAUMEA, MAKEMAKE, ERIS)
+    const dwarfBodies = [
+      { name: 'Ceres', dist: 2.92, r: 0.055, speed: 0.28, incl: 10.6, color: 0xa8a29e, angle: 2.2 },
+      { name: 'Haumea', dist: 6.95, r: 0.062, speed: 0.0032, incl: 28.2, color: 0xe2e8f0, angle: 4.1 },
+      { name: 'Makemake', dist: 7.35, r: 0.062, speed: 0.0028, incl: 29.0, color: 0xfdba74, angle: 1.4 },
+      { name: 'Eris', dist: 7.95, r: 0.075, speed: 0.0018, incl: 44.0, color: 0xf1f5f9, angle: 5.3 }
+    ].map((d) => {
+      const m = new THREE.Mesh(
+        new THREE.SphereGeometry(d.r, 14, 10),
+        new THREE.MeshStandardMaterial({ color: d.color, roughness: 0.8 })
+      );
+      if (d.name === 'Haumea') m.scale.set(1.5, 0.85, 0.95); // Fast-spinning ellipsoid!
+      solarGroup.add(m);
+      return { ...d, mesh: m };
+    });
+
+    // 3,200-OBJECT 3D KUIPER BELT RING (30–50 AU ICY RESERVOIR BEYOND NEPTUNE)
+    const kbCount = 3200;
+    const kbPos = new Float32Array(kbCount * 3);
+    for (let i = 0; i < kbCount; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const rad = 6.15 + Math.random() * 1.95;
+      kbPos[i * 3] = Math.cos(a) * rad;
+      kbPos[i * 3 + 1] = (Math.random() - 0.5) * 0.55;
+      kbPos[i * 3 + 2] = Math.sin(a) * rad;
+    }
+    const kbGeo = new THREE.BufferGeometry();
+    kbGeo.setAttribute('position', new THREE.BufferAttribute(kbPos, 3));
+    const kuiperBelt = new THREE.Points(kbGeo, new THREE.PointsMaterial({ color: 0x7dd3fc, size: 0.022, transparent: true, opacity: 0.42 }));
+    solarGroup.add(kuiperBelt);
+
+    // LIVE INTERSTELLAR PROBE VECTORS (VOYAGER 1 AT 1 LIGHT-DAY = 25.902B KM, VOYAGER 2, NEW HORIZONS)
+    const voyagerVec = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(6.2, 3.8, -5.2)]),
+      new THREE.LineBasicMaterial({ color: 0x22d3ee, transparent: true, opacity: 0.35 })
+    );
+    const voyagerDot = new THREE.Mesh(new THREE.OctahedronGeometry(0.08, 0), new THREE.MeshBasicMaterial({ color: 0xfde047 }));
+    voyagerDot.position.set(6.2, 3.8, -5.2);
+    solarGroup.add(voyagerVec, voyagerDot);
+
+    // 1,800-ROCK MAIN ASTEROID BELT
+    const beltCount = 1800;
+    const beltPos = new Float32Array(beltCount * 3);
+    for (let i = 0; i < beltCount; i++) {
+      const a = Math.random() * Math.PI * 2, rad = 2.74 + Math.random() * 0.40;
+      beltPos[i * 3] = Math.cos(a) * rad; beltPos[i * 3 + 1] = (Math.random() - 0.5) * 0.14; beltPos[i * 3 + 2] = Math.sin(a) * rad;
+    }
+    const beltGeo = new THREE.BufferGeometry();
+    beltGeo.setAttribute('position', new THREE.BufferAttribute(beltPos, 3));
+    const asteroidBelt = new THREE.Points(beltGeo, new THREE.PointsMaterial({ color: 0x94a3b8, size: 0.024, transparent: true, opacity: 0.72 }));
+    solarGroup.add(asteroidBelt);
+
+    // HALLEY'S COMET WITH PHYSICALLY CORRECT ANTI-SOLAR ION TAIL
+    const cometGroup = new THREE.Group();
+    const cometHead = new THREE.Mesh(new THREE.SphereGeometry(0.052, 14, 10), new THREE.MeshBasicMaterial({ color: 0xe0f2fe }));
+    const cometTail = new THREE.Mesh(new THREE.ConeGeometry(0.068, 0.82, 14, 1, true), new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.48, side: THREE.DoubleSide }));
+    cometTail.position.z = -0.44; cometTail.rotation.x = Math.PI / 2;
+    cometGroup.add(cometHead, cometTail);
+    solarGroup.add(cometGroup);
+    let cometAngle = 0.65;
+
+    // EINSTEIN SPACETIME WELL, GOLDILOCKS ZONE, PHOTON PULSE, HOHMANN ORBIT
+    const wellGeo = new THREE.PlaneGeometry(14.6, 14.6, 56, 56);
+    wellGeo.rotateX(-Math.PI / 2);
+    const wellMesh = new THREE.Mesh(wellGeo, new THREE.MeshBasicMaterial({ color: 0x22d3ee, wireframe: true, transparent: true, opacity: 0.34 }));
+    wellMesh.position.y = -0.72; wellMesh.visible = false;
+    solarGroup.add(wellMesh);
+
+    const habRing = new THREE.Mesh(new THREE.RingGeometry(1.78, 2.58, 96), new THREE.MeshBasicMaterial({ color: 0x10b981, side: THREE.DoubleSide, transparent: true, opacity: 0.19 }));
+    habRing.rotation.x = -Math.PI / 2; habRing.visible = false;
+    solarGroup.add(habRing);
+
+    const photonRing = new THREE.Mesh(new THREE.RingGeometry(0.95, 1.0, 96), new THREE.MeshBasicMaterial({ color: 0xfde047, side: THREE.DoubleSide, transparent: true, opacity: 0.94 }));
+    photonRing.rotation.x = -Math.PI / 2; photonRing.visible = false;
+    solarGroup.add(photonRing);
+
+    // 6.5-SECOND BIG-BANG VFX INTRO SHOCKWAVE RINGS (TRIPLE ANAMORPHIC ENERGY WAVES)
+    const vfxShockGroup = new THREE.Group();
+    vfxShockGroup.visible = false;
+    const shockRings = [
+      new THREE.Mesh(new THREE.RingGeometry(0.88, 1.0, 96), new THREE.MeshBasicMaterial({ color: 0x22d3ee, side: THREE.DoubleSide, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false })),
+      new THREE.Mesh(new THREE.RingGeometry(0.82, 0.92, 96), new THREE.MeshBasicMaterial({ color: 0xfde047, side: THREE.DoubleSide, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false })),
+      new THREE.Mesh(new THREE.RingGeometry(0.92, 0.98, 96), new THREE.MeshBasicMaterial({ color: 0xe879f9, side: THREE.DoubleSide, transparent: true, opacity: 0.78, blending: THREE.AdditiveBlending, depthWrite: false }))
+    ];
+    shockRings[0].rotation.x = -Math.PI / 2;
+    shockRings[1].rotation.x = -Math.PI / 2.35;
+    shockRings[2].rotation.x = -Math.PI / 1.75;
+    shockRings.forEach((r) => vfxShockGroup.add(r));
+    // 1,400-PARTICLE 3D SUPERNOVA PLASMA EXPLOSION BURST
+    const novaCount = 1400;
+    const novaPos = new Float32Array(novaCount * 3);
+    const novaCol = new Float32Array(novaCount * 3);
+    const novaVel = [];
+    for (let i = 0; i < novaCount; i++) {
+      const th = Math.random() * Math.PI * 2;
+      const ph = Math.acos(2 * Math.random() - 1);
+      const sp = 1.8 + Math.random() * 5.8;
+      novaVel.push({ vx: Math.sin(ph) * Math.cos(th) * sp, vy: Math.cos(ph) * sp * 0.65, vz: Math.sin(ph) * Math.sin(th) * sp });
+      const pick = Math.random();
+      novaCol[i * 3] = pick < 0.45 ? 1.0 : (pick < 0.8 ? 0.15 : 0.92);
+      novaCol[i * 3 + 1] = pick < 0.45 ? 0.82 : (pick < 0.8 ? 0.88 : 0.35);
+      novaCol[i * 3 + 2] = pick < 0.45 ? 0.32 : 1.0;
+    }
+    const novaGeo = new THREE.BufferGeometry();
+    novaGeo.setAttribute('position', new THREE.BufferAttribute(novaPos, 3));
+    novaGeo.setAttribute('color', new THREE.BufferAttribute(novaCol, 3));
+    const novaMat = new THREE.PointsMaterial({ size: 0.065, vertexColors: true, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false });
+    const novaBurst = new THREE.Points(novaGeo, novaMat);
+    vfxShockGroup.add(novaBurst);
+
+    // DUAL COUNTER-ROTATING TONY STARK ARC-REACTOR HOLOGRAPHIC GYRO RINGS
+    const gyroOuter = new THREE.Mesh(
+      new THREE.TorusGeometry(2.15, 0.016, 8, 96),
+      new THREE.MeshBasicMaterial({ color: 0x22d3ee, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending })
+    );
+    const gyroInner = new THREE.Mesh(
+      new THREE.TorusGeometry(1.42, 0.014, 8, 72),
+      new THREE.MeshBasicMaterial({ color: 0xfde047, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending })
+    );
+    vfxShockGroup.add(gyroOuter, gyroInner);
+
+    // HYPERSPACE WARP-SPEED STAR STREAKS (180 radial light-speed beams!)
+    const warpGroup = new THREE.Group();
+    const warpLines = [];
+    for (let i = 0; i < 180; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const rad = 0.8 + Math.random() * 6.5;
+      const z0 = -18 + Math.random() * 22;
+      const geo = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(Math.cos(a) * rad, Math.sin(a) * rad, z0),
+        new THREE.Vector3(Math.cos(a) * rad, Math.sin(a) * rad, z0 + 2.4)
+      ]);
+      const line = new THREE.Line(geo, new THREE.LineBasicMaterial({ color: i % 3 === 0 ? 0x38bdf8 : 0xffffff, transparent: true, opacity: 0.72, blending: THREE.AdditiveBlending }));
+      warpGroup.add(line);
+      warpLines.push({ line, z: z0, sp: 18 + Math.random() * 24 });
+    }
+    vfxShockGroup.add(warpGroup);
+    solarGroup.add(vfxShockGroup);
+
+    const trajGroup = new THREE.Group(); trajGroup.visible = false;
+    const trajLine = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0x22d3ee }));
+    const probeMesh = new THREE.Mesh(new THREE.ConeGeometry(0.055, 0.16, 6), new THREE.MeshBasicMaterial({ color: 0xfef08a }));
+    trajGroup.add(trajLine, probeMesh);
+    solarGroup.add(trajGroup);
+    let trajCurvePts = [], probeProgress = 0;
+
+    function rebuildTrajectory(targetId) {
+      if (!targetId || !bodyMeshes[targetId]) { trajGroup.visible = false; return; }
+      const r1 = bodyMeshes.earth.data.dist, r2 = bodyMeshes[targetId].data.dist;
+      const a = (r1 + r2) / 2, cOff = a - r1, bSemi = Math.sqrt(r1 * r2);
+      trajCurvePts = [];
+      for (let i = 0; i <= 64; i++) {
+        const th = (i / 64) * Math.PI;
+        trajCurvePts.push(new THREE.Vector3(Math.cos(th) * a - cOff, 0.04, Math.sin(th) * bSemi));
+      }
+      trajLine.geometry.dispose();
+      trajLine.geometry = new THREE.BufferGeometry().setFromPoints(trajCurvePts);
+      trajGroup.visible = true; probeProgress = 0;
+    }
+
+    // =========================================================================
+    // STAGE 2: IRON MAN BIO-HOLOGRAM MARK 85 (BLOOD FLOW + SYNAPSES + DNA)
+    // =========================================================================
+    const humanGroup = new THREE.Group(); humanGroup.visible = false; worldGroup.add(humanGroup);
+    const organismGroup = new THREE.Group(); humanGroup.add(organismGroup);
+
+    const holoBodyMat = new THREE.MeshPhysicalMaterial({ color: 0x22d3ee, emissive: 0x0e7490, emissiveIntensity: 0.35, transparent: true, opacity: 0.19, roughness: 0.2 });
+    const holoWireMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, wireframe: true, transparent: true, opacity: 0.12 });
+
+    const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.58, 0.44, 1.55, 24), holoBodyMat);
+    const torsoWire = new THREE.Mesh(new THREE.CylinderGeometry(0.59, 0.45, 1.56, 16), holoWireMat);
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.32, 24, 20), holoBodyMat); head.position.y = 1.18;
+    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.16, 0.28, 16), holoBodyMat); neck.position.y = 0.88;
+    organismGroup.add(torso, torsoWire, head, neck);
+
+    [-0.76, 0.76].forEach((x) => {
+      const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.09, 1.35, 14), holoBodyMat);
+      arm.position.set(x, 0.02, 0); arm.rotation.z = x > 0 ? 0.14 : -0.14; organismGroup.add(arm);
+    });
+    [-0.24, 0.24].forEach((x) => {
+      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.11, 1.65, 14), holoBodyMat);
+      leg.position.set(x, -1.52, 0); organismGroup.add(leg);
+    });
+
+    const brainMesh = new THREE.Mesh(new THREE.SphereGeometry(0.24, 20, 16), new THREE.MeshStandardMaterial({ color: 0xc084fc, emissive: 0xa855f7, emissiveIntensity: 0.72, roughness: 0.35 }));
+    brainMesh.scale.set(1.0, 0.85, 1.12); brainMesh.position.set(0, 1.22, 0);
+    const spine = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 1.75, 12), new THREE.MeshStandardMaterial({ color: 0x7dd3fc, emissive: 0x38bdf8, emissiveIntensity: 0.55 }));
+    spine.position.set(0, 0.18, -0.18);
+    organismGroup.add(brainMesh, spine);
+
+    for (let i = 0; i < 6; i++) {
+      const rib = new THREE.Mesh(new THREE.TorusGeometry(0.42 - i * 0.015, 0.016, 8, 28, Math.PI * 1.45), new THREE.MeshBasicMaterial({ color: 0xe2e8f0, transparent: true, opacity: 0.5 }));
+      rib.position.set(0, 0.46 - i * 0.13, 0); rib.rotation.x = Math.PI / 2; rib.rotation.z = -Math.PI * 0.22;
+      organismGroup.add(rib);
+    }
+
+    const lungsGroup = new THREE.Group();
+    const lungMat = new THREE.MeshStandardMaterial({ color: 0xf472b6, emissive: 0xec4899, emissiveIntensity: 0.35, transparent: true, opacity: 0.58 });
+    const leftLung = new THREE.Mesh(new THREE.SphereGeometry(0.23, 20, 16), lungMat); leftLung.scale.set(0.75, 1.45, 0.8); leftLung.position.set(-0.24, 0.26, 0.04);
+    const rightLung = new THREE.Mesh(new THREE.SphereGeometry(0.25, 20, 16), lungMat); rightLung.scale.set(0.8, 1.5, 0.82); rightLung.position.set(0.24, 0.26, 0.04);
+    lungsGroup.add(leftLung, rightLung); organismGroup.add(lungsGroup);
+
+    const heartMesh = new THREE.Mesh(new THREE.SphereGeometry(0.19, 24, 18), new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xdc2626, emissiveIntensity: 0.85, roughness: 0.25 }));
+    heartMesh.scale.set(0.9, 1.15, 0.85); heartMesh.position.set(0.06, 0.22, 0.14); organismGroup.add(heartMesh);
+
+    const bloodCount = 160;
+    const bloodPos = new Float32Array(bloodCount * 3);
+    const bloodCol = new Float32Array(bloodCount * 3);
+    const bloodMeta = [];
+    for (let i = 0; i < bloodCount; i++) {
+      const arterial = i % 2 === 0;
+      bloodMeta.push({ t: Math.random(), arterial, lane: i % 4, sp: 0.22 + Math.random() * 0.18 });
+      bloodCol[i * 3] = arterial ? 1.0 : 0.25; bloodCol[i * 3 + 1] = arterial ? 0.2 : 0.65; bloodCol[i * 3 + 2] = arterial ? 0.25 : 1.0;
+    }
+    const bloodGeo = new THREE.BufferGeometry();
+    bloodGeo.setAttribute('position', new THREE.BufferAttribute(bloodPos, 3));
+    bloodGeo.setAttribute('color', new THREE.BufferAttribute(bloodCol, 3));
+    organismGroup.add(new THREE.Points(bloodGeo, new THREE.PointsMaterial({ size: 0.042, vertexColors: true, transparent: true, opacity: 0.92 })));
+
+    const synapsePulses = [];
+    for (let i = 0; i < 6; i++) {
+      const sp = new THREE.Mesh(new THREE.SphereGeometry(0.045, 10, 8), new THREE.MeshBasicMaterial({ color: 0xe879f9 }));
+      organismGroup.add(sp); synapsePulses.push({ mesh: sp, phase: i / 6 });
+    }
+
+    const cellGroup = new THREE.Group(); cellGroup.visible = false;
+    cellGroup.add(
+      new THREE.Mesh(new THREE.SphereGeometry(1.55, 36, 28), new THREE.MeshPhysicalMaterial({ color: 0x38bdf8, emissive: 0x0284c7, emissiveIntensity: 0.22, transparent: true, opacity: 0.18 })),
+      new THREE.Mesh(new THREE.SphereGeometry(0.66, 28, 22), new THREE.MeshStandardMaterial({ color: 0xa855f7, emissive: 0x7e22ce, emissiveIntensity: 0.35, transparent: true, opacity: 0.35 }))
+    );
+    const dnaGroup = new THREE.Group();
+    for (let i = 0; i < 18; i++) {
+      const y = -0.45 + (i / 17) * 0.90, a = i * 0.58;
+      const b1 = new THREE.Mesh(new THREE.SphereGeometry(0.036, 10, 8), new THREE.MeshBasicMaterial({ color: 0x22d3ee }));
+      b1.position.set(Math.cos(a) * 0.22, y, Math.sin(a) * 0.22);
+      const b2 = new THREE.Mesh(new THREE.SphereGeometry(0.036, 10, 8), new THREE.MeshBasicMaterial({ color: 0xf472b6 }));
+      b2.position.set(-Math.cos(a) * 0.22, y, -Math.sin(a) * 0.22);
+      const rung = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.44, 6), new THREE.MeshBasicMaterial({ color: 0xfef08a, transparent: true, opacity: 0.75 }));
+      rung.position.set(0, y, 0); rung.rotation.z = Math.PI / 2; rung.rotation.y = -a;
+      dnaGroup.add(b1, b2, rung);
+    }
+    cellGroup.add(dnaGroup);
+    for (let i = 0; i < 10; i++) {
+      const mito = new THREE.Mesh(new THREE.SphereGeometry(0.14, 14, 10), new THREE.MeshStandardMaterial({ color: 0xf97316, emissive: 0xea580c, emissiveIntensity: 0.6 }));
+      mito.scale.set(1.85, 0.72, 0.72);
+      const a = (i / 10) * Math.PI * 2;
+      mito.position.set(Math.cos(a) * 1.04, (Math.random() - 0.5) * 0.85, Math.sin(a) * 1.04);
+      mito.rotation.set(Math.random(), Math.random(), Math.random());
+      cellGroup.add(mito);
+    }
+    humanGroup.add(cellGroup);
+
+    // =========================================================================
+    // 5. LIVE ECG, UI, VOICE & CONTROLS
+    // =========================================================================
+    const ecgCtx = document.getElementById('ecg-canvas').getContext('2d');
+    let ecgPhase = 0;
+    function drawEcg(dt) {
+      if (state.stage !== 'human') return;
+      ecgPhase = (ecgPhase + dt * (state.heartBpm / 60)) % 1;
+      ecgCtx.fillStyle = 'rgba(2, 6, 15, 0.24)'; ecgCtx.fillRect(0, 0, 136, 36);
+      ecgCtx.strokeStyle = '#fb7185'; ecgCtx.lineWidth = 1.8; ecgCtx.beginPath();
+      for (let x = 0; x < 136; x++) {
+        const p = (x / 136 + ecgPhase) % 1;
+        let y = 20;
+        if (p > 0.12 && p < 0.18) y = 16; else if (p > 0.22 && p < 0.25) y = 25;
+        else if (p >= 0.25 && p < 0.29) y = 4; else if (p >= 0.29 && p < 0.33) y = 30;
+        else if (p > 0.44 && p < 0.54) y = 14;
+        if (x === 0) ecgCtx.moveTo(x, y); else ecgCtx.lineTo(x, y);
+      }
+      ecgCtx.stroke();
+    }
+
+    function applyVisualMode() {
+      const badge = document.getElementById('view-mode-badge');
+      badge.textContent = state.stage === 'human'
+        ? (state.humanFocus === 'cell' ? 'Cell · DNA' : 'Bio-Holo')
+        : (state.singularity ? 'Black Hole' : state.viewMode === 'standard' ? 'Orbit' : state.viewMode === 'cross-section' ? '3D Core' : 'JWST IR');
+
+      if (sunHolderRef) sunHolderRef.visible = !state.singularity;
+      blackHoleGroup.visible = state.singularity;
+
+      BODIES.forEach((b) => {
+        const e = bodyMeshes[b.id];
+        const isSel = b.id === state.selectedId;
+        e.pinMesh.visible = isSel && state.stage === 'solar' && !(b.id === 'sun' && state.singularity);
+        e.shaderMat.uniforms.uInfrared.value = state.viewMode === 'infrared' ? 1.0 : 0.0;
+        if (b.id === 'sun') return;
+        e.outer.visible = !(state.viewMode === 'cross-section' && isSel);
+        e.cutGroup.visible = state.viewMode === 'cross-section' && isSel;
+        if (b.id === 'earth' && earthCloudMesh) earthCloudMesh.visible = state.viewMode === 'standard';
+      });
+    }
+
+    function toggleSingularity() {
+      if (state.stage !== 'solar') setStage('solar');
+      state.singularity = !state.singularity;
+      if (state.singularity) {
+        state.gravityWell = true; wellMesh.visible = true; wellMesh.material.color.setHex(0xe879f9);
+        showToast('Relativistic Singularity Active · GPU Accretion Disk + Polar Jets');
+      } else {
+        wellMesh.material.color.setHex(0x22d3ee);
+        showToast('Main-Sequence Solar Photosphere Restored');
+      }
+      applyVisualMode(); renderDrawer();
+    }
+
+    function setStage(nextStage) {
+      state.stage = nextStage;
+      solarGroup.visible = nextStage === 'solar'; humanGroup.visible = nextStage === 'human';
+      document.getElementById('ecg-pill').classList.toggle('hidden', nextStage !== 'human' || state.pyramidMode);
+      document.getElementById('stage-solar').className = nextStage === 'solar'
+        ? 'px-2.5 py-0.5 rounded-full text-[10.5px] font-semibold bg-cyan-400 text-slate-950 transition cursor-pointer'
+        : 'px-2.5 py-0.5 rounded-full text-[10.5px] font-semibold text-slate-300 hover:text-white transition cursor-pointer';
+      document.getElementById('stage-human').className = nextStage === 'human'
+        ? 'px-2.5 py-0.5 rounded-full text-[10.5px] font-semibold bg-cyan-400 text-slate-950 transition cursor-pointer'
+        : 'px-2.5 py-0.5 rounded-full text-[10.5px] font-semibold text-slate-300 hover:text-white transition cursor-pointer';
+      state.rotX = nextStage === 'human' ? 0.08 : 0.34;
+      state.zoom = nextStage === 'human' ? 1.12 : 1.0;
+      applyVisualMode(); renderQuickBar(); renderDrawer();
+    }
+
+    function firePhotonPulse() {
+      if (state.stage !== 'solar') setStage('solar');
+      state.photonActive = true; state.photonRadius = 0.62;
+      photonRing.visible = true; document.getElementById('photon-hud').classList.remove('hidden');
+    }
+
+    function renderQuickBar() {
+      const bar = document.getElementById('quick-bar');
+      // 6.5-SECOND HOLLYWOOD BIG-BANG VFX INTRO CHOREOGRAPHY
+      if (state.introPhase === 'standby') {
+        renderer.setClearColor(0x000000, 1);
+        renderer.clear();
+        return;
+      }
+      if (state.introPhase === 'playing') {
+        state.introTime += dt;
+        const T = state.introTime;
+        const flashEl = document.getElementById('bang-flash');
+
+        // 0.0s - 1.2s: Hyperspace Warp Tunnel + Dual Arc-Reactor Gyro Lock + Singularity Implosion
+        if (T < 1.2) {
+          const p = T / 1.2;
+          warpGroup.visible = true;
+          warpLines.forEach((wl) => {
+            wl.line.position.z += dt * wl.sp * (1 + p * 2.2);
+            if (wl.line.position.z > 12) wl.line.position.z = -18;
+          });
+          gyroOuter.visible = true; gyroInner.visible = true;
+          gyroOuter.rotation.x = T * 2.4; gyroOuter.rotation.y = T * 1.8;
+          gyroInner.rotation.y = -T * 3.1; gyroInner.rotation.z = T * 2.2;
+          const gScale = 1.4 - p * 0.95;
+          gyroOuter.scale.setScalar(gScale); gyroInner.scale.setScalar(gScale);
+          sunHolderRef.scale.setScalar(0.05 + Math.pow(p, 3) * 1.55);
+          BODIES.forEach((b) => { if (b.id !== 'sun') bodyMeshes[b.id].holder.scale.setScalar(0.001); });
+          Object.values(orbitLines).forEach((l) => { l.material.opacity = 0; });
+          asteroidBelt.visible = false; kuiperBelt.visible = false; solarWind.visible = false;
+          flashEl.style.opacity = T > 0.90 ? String((T - 0.90) / 0.30) : '0';
+          state.rotX = 0.04; state.rotY = T * 2.2; state.zoom = 2.8 - p * 0.3;
+        }
+        // 1.2s - 3.3s: SUPERNOVA PLASMA EXPLOSION + TRIPLE SHOCKWAVES + CAMERA IMPACT SHAKE!
+        else if (T < 3.3) {
+          const p = (T - 1.2) / 2.1;
+          warpGroup.visible = p < 0.28;
+          gyroOuter.visible = p < 0.65; gyroInner.visible = p < 0.65;
+          gyroOuter.scale.setScalar(0.5 + p * 6.5); gyroInner.scale.setScalar(0.4 + p * 4.8);
+          gyroOuter.material.opacity = Math.max(0, (1 - p * 1.6) * 0.85);
+          gyroInner.material.opacity = Math.max(0, (1 - p * 1.6) * 0.85);
+          flashEl.style.opacity = String(Math.max(0, 1 - p * 2.8));
+          sunHolderRef.scale.setScalar(1.60 - p * 0.60);
+          // 1,400-Particle Supernova Plasma Burst Expansion
+          const npAttr = novaGeo.attributes.position;
+          const tBurst = T - 1.2;
+          for (let i = 0; i < novaCount; i++) {
+            const v = novaVel[i];
+            const drag = 1 - Math.exp(-tBurst * 1.4);
+            npAttr.setXYZ(i, v.vx * drag * 1.9, v.vy * drag * 1.9, v.vz * drag * 1.9);
+          }
+          npAttr.needsUpdate = true;
+          novaMat.opacity = Math.max(0, (1 - p) * 0.95);
+          // Dramatic Damped Camera Impact Shake!
+          const shake = Math.max(0, 1 - p * 2.6) * 0.24;
+          camera.position.x = (Math.random() - 0.5) * shake;
+          camera.position.y = 2.5 + (Math.random() - 0.5) * shake;
+          shockRings.forEach((r, idx) => {
+            r.scale.setScalar(0.5 + Math.pow(p, 0.7) * (10.5 + idx * 3.0));
+            r.material.opacity = Math.max(0, (1 - p) * 0.95);
+          });
+          BODIES.forEach((b, idx) => {
+            if (b.id === 'sun') return;
+            const reveal = Math.max(0.001, Math.min(1, (p * 1.55 - idx * 0.09) * 3.0));
+            bodyMeshes[b.id].holder.scale.setScalar(reveal);
+          });
+          Object.values(orbitLines).forEach((l) => { l.material.opacity = p * 0.28; });
+          asteroidBelt.visible = p > 0.30; kuiperBelt.visible = p > 0.50; solarWind.visible = true;
+          state.rotX = 0.04 + p * 0.44;
+          state.rotY += dt * (1.85 - p * 1.05);
+          state.zoom = 2.5 - p * 1.35;
+        }
+        // 3.3s - 6.5s: Sweeping IMAX Crane Pullback + Letterbox Retract + HUD Lock-In
+        else if (T < 6.5) {
+          const p = (T - 3.3) / 3.2;
+          camera.position.x *= 0.85; camera.position.y += (2.5 - camera.position.y) * 0.15;
+          flashEl.style.opacity = '0';
+          vfxShockGroup.visible = false;
+          sunHolderRef.scale.setScalar(1.0);
+          BODIES.forEach((b) => { bodyMeshes[b.id].holder.scale.setScalar(1.0); });
+          state.rotX = 0.48 - p * 0.14;
+          state.rotY += dt * (0.80 - p * 0.65);
+          state.zoom = 1.15 - p * 0.15;
+          if (T > 5.2) {
+            document.getElementById('lb-top').style.height = '0px';
+            document.getElementById('lb-bot').style.height = '0px';
+            document.getElementById('main-header').classList.remove('opacity-0');
+            document.getElementById('bottom-bar').classList.remove('opacity-0');
+          }
+        } else {
+          state.introPhase = 'done';
+          camera.position.x = 0; camera.position.y = 2.5;
+          vfxShockGroup.visible = false;
+          document.getElementById('lb-top').style.height = '0px';
+          document.getElementById('lb-bot').style.height = '0px';
+          document.getElementById('main-header').classList.remove('opacity-0');
+          document.getElementById('bottom-bar').classList.remove('opacity-0');
+        }
+      }
+
+      if (state.stage === 'solar') {
+        bar.innerHTML = BODIES.map((b) => `<button data-body="${b.id}" type="button" class="px-2.5 py-1 rounded-full text-[11px] font-medium whitespace-nowrap transition cursor-pointer ${b.id === state.selectedId ? 'bg-cyan-400 text-slate-950 font-semibold' : 'text-slate-300 hover:text-white hover:bg-white/10'}">${b.name}</button>`).join('');
+        bar.querySelectorAll('button').forEach((btn) => { btn.onclick = () => { state.selectedId = btn.dataset.body; applyVisualMode(); renderQuickBar(); renderDrawer(); }; });
+      } else {
+        bar.innerHTML = HUMAN_SYSTEMS.map((s) => `<button data-sys="${s.id}" type="button" class="px-2.5 py-1 rounded-full text-[11px] font-medium whitespace-nowrap transition cursor-pointer ${s.id === state.humanFocus ? 'bg-cyan-400 text-slate-950 font-semibold' : 'text-slate-300 hover:text-white hover:bg-white/10'}">${s.name}</button>`).join('');
+        bar.querySelectorAll('button').forEach((btn) => {
+          btn.onclick = () => { state.humanFocus = btn.dataset.sys; organismGroup.visible = state.humanFocus !== 'cell'; cellGroup.visible = state.humanFocus === 'cell'; applyVisualMode(); renderQuickBar(); renderDrawer(); };
+        });
+      }
+    }
+
+    function renderDrawer() {
+      ['dossier', 'modes', 'quiz', '6hand'].forEach((t) => {
+        const el = document.getElementById('tab-' + t);
+        if (el) el.className = state.drawerTab === t ? 'px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-cyan-400 text-slate-950 cursor-pointer' : 'px-2.5 py-1 rounded-lg text-[11px] font-semibold text-slate-300 hover:bg-white/10 cursor-pointer';
+      });
+      const content = document.getElementById('drawer-content');
+      if (state.drawerTab === 'dossier') {
+        if (state.stage === 'human') {
+          const sys = HUMAN_SYSTEMS.find((s) => s.id === state.humanFocus) || HUMAN_SYSTEMS[0];
+          content.innerHTML = `
+            <div class="flex items-start justify-between"><div><h2 class="text-base font-bold text-white">${sys.name}</h2><p class="text-[11px] text-cyan-300">${sys.metric}</p></div><span class="px-2 py-0.5 rounded-full text-[10px] bg-white/10 text-emerald-300">OpenStax 2e</span></div>
+            <p class="text-[11.5px] text-slate-300 leading-relaxed">${sys.detail}</p>
+            <div class="p-2.5 rounded-xl bg-black/40 border border-white/10 space-y-1.5">
+              <div class="flex justify-between text-[11px]"><span class="text-slate-300">Cardiac Rate</span><span class="font-bold text-rose-400">${state.heartBpm} BPM</span></div>
+              <input id="bpm-slider" type="range" min="45" max="165" value="${state.heartBpm}" class="w-full accent-rose-400 cursor-pointer" />
+            </div>`;
+          document.getElementById('bpm-slider').oninput = (e) => { state.heartBpm = Number(e.target.value); document.getElementById('ecg-bpm-readout').textContent = state.heartBpm; renderDrawer(); };
+          return;
+        }
+        const b = BODIES.find((x) => x.id === state.selectedId) || BODIES[3];
+        const vw = (state.visitorKg * (b.g / 9.8)).toFixed(1);
+        content.innerHTML = `
+          <div class="flex items-start justify-between"><div><h2 class="text-base font-bold text-white">${b.full}</h2><p class="text-[11px] text-cyan-300">${b.cls} · ${b.incl}° incl.</p></div><span class="px-2 py-0.5 rounded-full text-[10px] bg-white/10 text-slate-300">NASA Fact Sheet</span></div>
+          <div class="grid grid-cols-2 gap-1.5 text-[11px]">
+            <div class="p-2 rounded-lg bg-black/40 border border-white/10"><div class="text-slate-400">Gravity</div><div class="font-bold text-white">${b.g} m/s²</div></div>
+            <div class="p-2 rounded-lg bg-black/40 border border-white/10"><div class="text-slate-400">Temp</div><div class="font-bold text-white">${b.temp} °C</div></div>
+            <div class="p-2 rounded-lg bg-black/40 border border-white/10"><div class="text-slate-400">Mass</div><div class="font-bold text-white">${b.mass}</div></div>
+            <div class="p-2 rounded-lg bg-black/40 border border-white/10"><div class="text-slate-400">Light Time</div><div class="font-bold text-amber-300">${b.lightMin} min</div></div>
+          </div>
+          <div class="p-2.5 rounded-xl bg-black/40 border border-cyan-400/25 space-y-1">
+            <div class="flex justify-between text-[11px]"><span class="text-slate-300">Your Mass: ${state.visitorKg} kg</span><span class="font-bold text-cyan-300">${vw} kg here</span></div>
+            <input id="weight-slider" type="range" min="25" max="130" value="${state.visitorKg}" class="w-full accent-cyan-400 cursor-pointer" />
+          </div>
+          <div class="space-y-1.5">
+            <div class="text-[11px] font-semibold text-slate-300">Elemental Composition</div>
+            ${b.elements.map((e) => `<div><div class="flex justify-between text-[11px]"><span>${e.n} (${e.s})</span><span class="font-mono font-bold">${e.p}%</span></div><div class="w-full h-1.5 rounded-full bg-white/10 overflow-hidden"><div style="width:${e.p}%;background:${e.c}" class="h-full rounded-full"></div></div></div>`).join('')}
+          </div>
+          <div class="space-y-1">
+            <div class="text-[11px] font-semibold text-slate-300">Surface Topology Pins</div>
+            ${b.pins.map((p) => `<div class="p-2 rounded-lg bg-black/30 border border-white/10"><div class="text-cyan-300 font-semibold">${p.n}</div><div class="text-[11px] text-slate-400">${p.d}</div></div>`).join('')}
+          </div>`;
+        document.getElementById('weight-slider').oninput = (e) => { state.visitorKg = Number(e.target.value); renderDrawer(); };
+      } else if (state.drawerTab === 'modes') {
+        content.innerHTML = `
+          <div class="grid grid-cols-2 gap-1.5">
+            <button id="m-bh" class="p-2 rounded-xl border text-left cursor-pointer ${state.singularity ? 'bg-fuchsia-500/20 border-fuchsia-400 text-fuchsia-200' : 'bg-black/35 border-white/10 text-slate-300'}"><div class="font-semibold">Black Hole</div><div class="text-[10px] text-slate-400">Accretion + Jets</div></button>
+            <button id="m-grav" class="p-2 rounded-xl border text-left cursor-pointer ${state.gravityWell ? 'bg-cyan-400/20 border-cyan-400 text-cyan-200' : 'bg-black/35 border-white/10 text-slate-300'}"><div class="font-semibold">Spacetime Well</div><div class="text-[10px] text-slate-400">Einstein mesh</div></button>
+            <button id="m-hab" class="p-2 rounded-xl border text-left cursor-pointer ${state.habitableZone ? 'bg-emerald-400/20 border-emerald-400 text-emerald-200' : 'bg-black/35 border-white/10 text-slate-300'}"><div class="font-semibold">Goldilocks</div><div class="text-[10px] text-slate-400">0.95–1.67 AU</div></button>
+            <button id="m-scale" class="p-2 rounded-xl border text-left cursor-pointer ${state.sizeScaleMode ? 'bg-cyan-400/20 border-cyan-400 text-cyan-200' : 'bg-black/35 border-white/10 text-slate-300'}"><div class="font-semibold">Size Lineup</div><div class="text-[10px] text-slate-400">Side-by-side</div></button>
+            <button id="m-audio" class="col-span-2 p-2 rounded-xl border text-left cursor-pointer ${state.resonanceOn ? 'bg-amber-400/20 border-amber-400 text-amber-200' : 'bg-black/35 border-white/10 text-slate-300'}"><div class="font-semibold">Orbital Resonance Synthesizer (${state.resonanceOn ? 'ON' : 'OFF'})</div></button>
+          </div>
+          <button id="m-time" class="w-full p-2 rounded-xl border text-left cursor-pointer ${state.timelineOpen ? 'bg-cyan-400/20 border-cyan-400 text-cyan-200' : 'bg-black/35 border-white/10 text-slate-300'}"><div class="font-semibold">Historical Alignment Timeline (1950–2100)</div></button>
+          <div class="p-2.5 rounded-xl bg-black/35 border border-white/10 space-y-2">
+            <div class="p-2.5 rounded-xl bg-black/45 border border-cyan-400/25 space-y-2 mb-2.5">
+            <div class="flex items-center justify-between text-[10.5px]">
+              <span class="font-semibold text-cyan-300">NASA JPL Live Catalog</span>
+              <span class="text-emerald-300 font-mono">1,582,164+ Bodies</span>
+            </div>
+            <div class="text-[10px] text-slate-400">Horizons: 1,582,164 asteroids · 4,089 comets · 461 moons · 5 dwarf planets · Voyager 1 at 25.902B km (1 Light-Day)</div>
+            <div class="flex gap-1">
+              <input id="jpl-query" type="text" placeholder="Query JPL (e.g. Apophis, Bennu, Eros, Halley)" class="flex-1 px-2 py-1 rounded-lg bg-black/60 border border-white/15 text-[11px] text-white outline-none focus:border-cyan-400" />
+              <button id="jpl-search-btn" type="button" class="px-2.5 py-1 rounded-lg bg-cyan-400 text-slate-950 font-bold text-[10.5px] cursor-pointer">JPL</button>
+            </div>
+            <div id="jpl-result" class="text-[10.5px] text-slate-300"></div>
+          </div>
+          <div class="text-[11px] font-semibold text-cyan-300">Live 3D Hohmann Transfer Launch</div>
+            <div class="flex flex-wrap gap-1">${Object.keys(TRAJECTORIES).map((k) => `<button data-traj="${k}" class="px-2.5 py-1 rounded-lg text-[10.5px] border cursor-pointer ${state.trajectoryTarget === k ? 'bg-cyan-400 text-slate-950 border-cyan-400 font-bold' : 'bg-black/40 border-white/10 text-slate-300'}">${TRAJECTORIES[k].target}</button>`).join('')}</div>
+            ${state.trajectoryTarget ? `<div class="text-[11px] text-slate-300">Δv: <b class="text-white">${TRAJECTORIES[state.trajectoryTarget].dv}</b> · Transit: <b class="text-cyan-300">${TRAJECTORIES[state.trajectoryTarget].days}</b></div>` : ''}
+          </div>`;
+        document.getElementById('m-bh').onclick = () => toggleSingularity();
+        const jplBtn = document.getElementById('jpl-search-btn');
+        if (jplBtn) {
+          jplBtn.onclick = async () => {
+            const q = (document.getElementById('jpl-query').value || 'Apophis').trim();
+            const out = document.getElementById('jpl-result');
+            out.textContent = 'Querying NASA JPL SBDB API…';
+            const fallback = {
+              apophis: '99942 Apophis (Aten NEO) · a = 0.922 AU · e = 0.191 · Close Earth pass Apr 13, 2029 (31,600 km)',
+              bennu: '101955 Bennu (Apollo PHA) · a = 1.126 AU · Sample returned by NASA OSIRIS-REx',
+              eros: '433 Eros (Amor NEO) · a = 1.458 AU · First asteroid orbited by NEAR Shoemaker',
+              halley: '1P/Halley (Periodic Comet) · Period 75.3 yrs · Next perihelion 2061',
+              arrokoth: '486958 Arrokoth (KBO) · a = 44.58 AU · Visited by NASA New Horizons'
+            };
+            try {
+              const res = await fetch('https://ssd-api.jpl.nasa.gov/sbdb.api?sstr=' + encodeURIComponent(q));
+              if (!res.ok) throw new Error('offline');
+              const data = await res.json();
+              const name = data.object && data.object.fullname ? data.object.fullname : q;
+              const cls = data.object && data.object.orbit_class ? data.object.orbit_class.name : 'Small Body';
+              const aEl = data.orbit && data.orbit.elements ? data.orbit.elements.find((x) => x.name === 'a') : null;
+              out.textContent = `${name} (${cls})${aEl ? ' · a = ' + Number(aEl.value).toFixed(3) + ' AU' : ''} · Live NASA JPL`;
+            } catch (_err) {
+              const key = q.toLowerCase();
+              const match = Object.keys(fallback).find((k) => key.includes(k));
+              out.textContent = match ? fallback[match] : `Cached JPL Record: ${q} · Connect online for live ssd-api.jpl.nasa.gov lookup.`;
+            }
+          };
+        }
+        document.getElementById('m-grav').onclick = () => { state.gravityWell = !state.gravityWell; wellMesh.visible = state.gravityWell; renderDrawer(); };
+        document.getElementById('m-hab').onclick = () => { state.habitableZone = !state.habitableZone; habRing.visible = state.habitableZone; renderDrawer(); };
+        document.getElementById('m-scale').onclick = () => { state.sizeScaleMode = !state.sizeScaleMode; renderDrawer(); };
+        document.getElementById('m-audio').onclick = () => toggleOrbitalResonance();
+        document.getElementById('m-time').onclick = () => { state.timelineOpen = !state.timelineOpen; document.getElementById('timeline-strip').classList.toggle('hidden', !state.timelineOpen); renderDrawer(); };
+        content.querySelectorAll('[data-traj]').forEach((btn) => { btn.onclick = () => { state.trajectoryTarget = state.trajectoryTarget === btn.dataset.traj ? null : btn.dataset.traj; rebuildTrajectory(state.trajectoryTarget); renderDrawer(); }; });
+      } else if (state.drawerTab === 'quiz') {
+        const q = QUIZ[state.quizIdx % QUIZ.length];
+        content.innerHTML = `
+          <div class="flex justify-between text-[11px]"><span class="text-amber-300 font-semibold">Judge Quiz (${(state.quizIdx % QUIZ.length) + 1}/${QUIZ.length})</span><span class="text-emerald-300 font-bold">Score: ${state.quizScore}</span></div>
+          <div class="p-2.5 rounded-xl bg-black/40 border border-white/10 text-white font-medium">${q.q}</div>
+          <div class="space-y-1.5">${q.opts.map((o, i) => `<button data-opt="${i}" class="w-full text-left px-3 py-2 rounded-xl border text-[11.5px] cursor-pointer ${state.quizChoice === i ? 'bg-cyan-400/20 border-cyan-400 text-cyan-200 font-semibold' : 'bg-black/30 border-white/10 text-slate-300'}">${i + 1}. ${o}</button>`).join('')}</div>
+          <button id="btn-fist-punch" class="w-full py-2 rounded-xl bg-amber-400 text-slate-950 font-bold text-xs cursor-pointer">✊ Fist-Punch Lock Answer</button>
+          ${state.quizFeedback ? `<div class="p-2 rounded-lg bg-white/10 text-[11px] text-emerald-300">${state.quizFeedback}</div>` : ''}`;
+        content.querySelectorAll('[data-opt]').forEach((b) => { b.onclick = () => { state.quizChoice = Number(b.dataset.opt); renderDrawer(); }; });
+        document.getElementById('btn-fist-punch').onclick = () => {
+          const ok = state.quizChoice === q.ans; if (ok) state.quizScore += 1;
+          state.quizFeedback = ok ? 'Correct! Advancing…' : `Answer: ${q.opts[q.ans]}`;
+          state.quizIdx = (state.quizIdx + 1) % QUIZ.length; renderDrawer();
+        };
+      } else {
+        content.innerHTML = `
+          <div class="text-[11px] text-slate-300">6-Hand 3-Presenter Zone Matrix (0.85 conf · 300ms debounce · Strict Voice-Only Talk-Back):</div>
+          <div class="space-y-1.5 text-[11px]">
+            <button id="sim-p1" class="w-full p-2 rounded-xl bg-sky-400/15 border border-sky-400/35 text-left text-sky-200 cursor-pointer"><b>P1 Left:</b> Open Palm Rotate · Pinch Zoom</button>
+            <button id="sim-p2" class="w-full p-2 rounded-xl bg-amber-400/15 border border-amber-400/35 text-left text-amber-200 cursor-pointer"><b>P2 Center:</b> Point 0.5s Dossier · Fist Lock</button>
+            <button id="sim-p3" class="w-full p-2 rounded-xl bg-emerald-400/15 border border-emerald-400/35 text-left text-emerald-200 cursor-pointer"><b>P3 Right:</b> 3-Finger View · Spread Explode · 2s Reset</button>
+          </div>`;
+        document.getElementById('sim-p1').onclick = () => { state.rotY += 0.9; showToast('P1 Left Zone: 3D Rotate (Silent)'); };
+        document.getElementById('sim-p2').onclick = () => { showToast('P2 Center Zone: Focus Locked (Silent)'); };
+        document.getElementById('sim-p3').onclick = () => { state.explodeTarget = state.explodeTarget > 0.5 ? 0 : 1; showToast(state.explodeTarget ? 'P3 Right: Orbits Exploded (Silent)' : 'P3 Right: Reassembled'); };
+      }
+    }
+
+    function handleVoiceCommand(raw) {
+      const t = (raw || '').toLowerCase();
+      let reply = '';
+      if (t.includes('black hole') || t.includes('singularity')) { toggleSingularity(); reply = 'Initiating gravitational collapse into a rotating relativistic black hole.'; }
+      else if (t.includes('human') || t.includes('body') || t.includes('sharir')) { setStage('human'); reply = 'Switching to Stage 2, the Bio-Hologram with live circulatory flow and ECG.'; }
+      else if (t.includes('cell') || t.includes('dna') || t.includes('koshika')) { setStage('human'); state.humanFocus = 'cell'; organismGroup.visible = false; cellGroup.visible = true; reply = 'Zooming into the eukaryotic cell and rotating DNA double helix.'; }
+      else if (t.includes('solar')) { setStage('solar'); reply = 'Returning to Stage 1, the Photorealistic GPU Solar System.'; }
+      else if (t.includes('gravity') || t.includes('spacetime')) { state.gravityWell = !state.gravityWell; wellMesh.visible = state.gravityWell; reply = 'Toggling Einstein spacetime curvature.'; }
+      else if (t.includes('photon') || t.includes('light')) { firePhotonPulse(); reply = 'Firing photon pulse at 299,792 kilometers per second.'; }
+      else if (t.includes('pyramid')) { togglePyramidMode(); reply = 'Toggling 4-sided hologram pyramid projection.'; }
+      else if (t.includes('venus') || t.includes('shukra')) { setStage('solar'); state.selectedId = 'venus'; state.drawerOpen = true; state.drawerTab = 'dossier'; reply = 'Analyzing Venus. 96.5 percent carbon dioxide, 464 degrees Celsius.'; }
+      else if (t.includes('pluto') || t.includes('प्लूटो')) { setStage('solar'); state.selectedId = 'pluto'; state.drawerOpen = true; state.drawerTab = 'dossier'; reply = 'Focusing on Pluto in its 17.16 degree inclined Kuiper Belt orbit.'; }
+      else if (t.includes('quiz')) { state.drawerOpen = true; state.drawerTab = 'quiz'; reply = 'Opening Judge Quiz mode.'; }
+      else { reply = 'Command received. Try Black Hole, Photon Pulse, Analyze Venus, or Human Body.'; }
+      document.getElementById('right-drawer').classList.toggle('hidden', !state.drawerOpen);
+      applyVisualMode(); renderQuickBar(); renderDrawer();
+      showToast('🎙 ' + raw);
+      speakVoiceOnlyReply(reply);
+    }
+
+    function togglePyramidMode() {
+      state.pyramidMode = !state.pyramidMode;
+      document.getElementById('main-header').classList.toggle('hidden', state.pyramidMode);
+      document.getElementById('bottom-bar').classList.toggle('hidden', state.pyramidMode);
+      document.getElementById('right-drawer').classList.add('hidden');
+      document.getElementById('ecg-pill').classList.toggle('hidden', state.pyramidMode || state.stage !== 'human');
+      document.getElementById('btn-exit-pyramid').classList.toggle('hidden', !state.pyramidMode);
+      renderer.setScissorTest(state.pyramidMode);
+      if (!state.pyramidMode) renderer.setViewport(0, 0, window.innerWidth, window.innerHeight);
+    }
+
+    document.getElementById('stage-solar').onclick = () => setStage('solar');
+    document.getElementById('stage-human').onclick = () => setStage('human');
+    document.getElementById('btn-cycle-view').onclick = () => {
+      if (state.stage === 'human') { state.humanFocus = state.humanFocus === 'cell' ? 'organism' : 'cell'; organismGroup.visible = state.humanFocus !== 'cell'; cellGroup.visible = state.humanFocus === 'cell'; }
+      else { const o = ['standard', 'cross-section', 'infrared']; state.viewMode = o[(o.indexOf(state.viewMode) + 1) % o.length]; }
+      applyVisualMode(); renderQuickBar();
+    };
+    document.getElementById('btn-physics').onclick = () => { if (state.stage !== 'solar') setStage('solar'); state.gravityWell = !state.gravityWell; state.habitableZone = state.gravityWell; wellMesh.visible = state.gravityWell; habRing.visible = state.habitableZone; renderDrawer(); };
+    document.getElementById('btn-singularity').onclick = () => toggleSingularity();
+    document.getElementById('btn-photon').onclick = () => firePhotonPulse();
+    // =========================================================================
+    // LIVE ACOUSTIC CLAP DETECTOR + 6.5s HOLLYWOOD VFX IGNITION SOUND ENGINE
+    // =========================================================================
+    let micStream = null, micAnalyser = null, clapListenActive = false;
+
+    function playCinemaIgnitionSound() {
+      try {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return;
+        if (!audioCtx) audioCtx = new AC();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const now = audioCtx.currentTime;
+
+        // 1. Deep Sub-Bass Gravity Implosion -> Big Bang Drop (0.0s - 2.4s)
+        const sub = audioCtx.createOscillator();
+        const subG = audioCtx.createGain();
+        sub.type = 'sine';
+        sub.frequency.setValueAtTime(115, now);
+        sub.frequency.exponentialRampToValueAtTime(34, now + 1.15);
+        sub.frequency.exponentialRampToValueAtTime(28, now + 2.6);
+        subG.gain.setValueAtTime(0.001, now);
+        subG.gain.linearRampToValueAtTime(0.28, now + 0.15);
+        subG.gain.exponentialRampToValueAtTime(0.001, now + 2.8);
+        sub.connect(subG); subG.connect(audioCtx.destination);
+        sub.start(now); sub.stop(now + 2.9);
+
+        // 2. Cinematic Brass-Like Rising THX Harmonic Swell (1.1s - 5.8s)
+        [65.41, 130.81, 196.0, 261.63, 329.63, 392.0].forEach((freq, idx) => {
+          const osc = audioCtx.createOscillator();
+          const g = audioCtx.createGain();
+          const filt = audioCtx.createBiquadFilter();
+          osc.type = idx < 2 ? 'sawtooth' : 'triangle';
+          osc.frequency.setValueAtTime(freq * 0.88, now + 0.9);
+          osc.frequency.exponentialRampToValueAtTime(freq, now + 2.6 + idx * 0.12);
+          filt.type = 'lowpass';
+          filt.frequency.setValueAtTime(220, now + 0.9);
+          filt.frequency.exponentialRampToValueAtTime(2400, now + 4.4);
+          g.gain.setValueAtTime(0.0001, now + 0.9);
+          g.gain.linearRampToValueAtTime(0.045 / (idx * 0.25 + 1), now + 2.8);
+          g.gain.exponentialRampToValueAtTime(0.0001, now + 6.2);
+          osc.connect(filt); filt.connect(g); g.connect(audioCtx.destination);
+          osc.start(now + 0.9); osc.stop(now + 6.3);
+        });
+
+        // 3. High-Tension Metallic Cinema Riser (0.0s -> 1.18s)
+        const riser = audioCtx.createOscillator();
+        const riserG = audioCtx.createGain();
+        riser.type = 'sawtooth';
+        riser.frequency.setValueAtTime(140, now);
+        riser.frequency.exponentialRampToValueAtTime(1850, now + 1.18);
+        riserG.gain.setValueAtTime(0.001, now);
+        riserG.gain.exponentialRampToValueAtTime(0.09, now + 1.15);
+        riserG.gain.exponentialRampToValueAtTime(0.0001, now + 1.25);
+        riser.connect(riserG); riserG.connect(audioCtx.destination);
+        riser.start(now); riser.stop(now + 1.28);
+
+        // 4. Relativistic Shockwave Blast Whoosh at T = 1.2s
+        const bufLen = Math.floor(audioCtx.sampleRate * 1.4);
+        const nBuf = audioCtx.createBuffer(1, bufLen, audioCtx.sampleRate);
+        const ch = nBuf.getChannelData(0);
+        for (let i = 0; i < bufLen; i++) ch[i] = (Math.random() * 2 - 1) * Math.exp(-i / (audioCtx.sampleRate * 0.35));
+        const nSrc = audioCtx.createBufferSource();
+        nSrc.buffer = nBuf;
+        const nFilt = audioCtx.createBiquadFilter();
+        nFilt.type = 'bandpass'; nFilt.frequency.setValueAtTime(900, now + 1.18);
+        nFilt.frequency.exponentialRampToValueAtTime(120, now + 2.4);
+        const nGain = audioCtx.createGain();
+        nGain.gain.setValueAtTime(0.24, now + 1.18);
+        nGain.gain.exponentialRampToValueAtTime(0.001, now + 2.5);
+        nSrc.connect(nFilt); nFilt.connect(nGain); nGain.connect(audioCtx.destination);
+        nSrc.start(now + 1.18);
+      } catch (_e) {}
+    }
+
+    function triggerClapIntro() {
+      if (state.introPhase === 'playing') return;
+      state.introPhase = 'playing';
+      state.introTime = 0;
+      clapListenActive = false;
+      const curtain = document.getElementById('clap-curtain');
+      curtain.style.opacity = '0';
+      setTimeout(() => curtain.classList.add('hidden'), 650);
+      document.getElementById('main-header').classList.add('opacity-0');
+      document.getElementById('bottom-bar').classList.add('opacity-0');
+      vfxShockGroup.visible = true;
+      document.getElementById('lb-top').style.height = '9vh';
+      document.getElementById('lb-bot').style.height = '9vh';
+      const npAttr = novaGeo.attributes.position;
+      for (let i = 0; i < novaCount; i++) npAttr.setXYZ(i, 0, 0, 0);
+      npAttr.needsUpdate = true;
+      novaMat.opacity = 0;
+      state.stage = 'solar';
+      solarGroup.visible = true;
+      humanGroup.visible = false;
+      playCinemaIgnitionSound();
+    }
+
+    function armBlackoutClapStandby() {
+      state.introPhase = 'standby';
+      state.introTime = 0;
+      vfxShockGroup.visible = false;
+      document.getElementById('main-header').classList.add('opacity-0');
+      document.getElementById('bottom-bar').classList.add('opacity-0');
+      document.getElementById('right-drawer').classList.add('hidden');
+      state.drawerOpen = false;
+      const curtain = document.getElementById('clap-curtain');
+      curtain.classList.remove('hidden');
+      requestAnimationFrame(() => { curtain.style.opacity = '1'; });
+      }
+
+    async function startMicClapListener() {
+      if (clapListenActive || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
+      try {
+        if (!micStream) micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!audioCtx) audioCtx = new AC();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const src = audioCtx.createMediaStreamSource(micStream);
+        micAnalyser = audioCtx.createAnalyser();
+        micAnalyser.fftSize = 512;
+        src.connect(micAnalyser);
+        clapListenActive = true;
+        const buf = new Uint8Array(micAnalyser.frequencyBinCount);
+        const listenLoop = () => {
+          if (!clapListenActive || state.introPhase !== 'standby') return;
+          micAnalyser.getByteTimeDomainData(buf);
+          let peak = 0;
+          for (let i = 0; i < buf.length; i++) {
+            const v = Math.abs(buf[i] - 128) / 128;
+            if (v > peak) peak = v;
+          }
+          if (peak > 0.38) {
+            triggerClapIntro();
+            return;
+          }
+          requestAnimationFrame(listenLoop);
+        };
+        listenLoop();
+      } catch (_e) {
+        // Fallback: tap anywhere or press Spacebar if mic is blocked
+      }
+    }
+
+    document.getElementById('btn-enable-mic-clap').onclick = (e) => {
+      e.stopPropagation();
+      startMicClapListener();
+      document.getElementById('clap-status').textContent = 'MIC ARMED · CLAP NOW';
+      document.getElementById('btn-enable-mic-clap').classList.add('hidden');
+    };
+    document.getElementById('clap-curtain').onclick = () => triggerClapIntro();
+    document.getElementById('btn-arm-clap').onclick = () => armBlackoutClapStandby();
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' && state.introPhase === 'standby') { e.preventDefault(); triggerClapIntro(); }
+    });
+
+    document.getElementById('btn-cinema').onclick = () => {
+      state.cinemaMode = !state.cinemaMode;
+      document.getElementById('btn-cinema').classList.toggle('bg-amber-400', state.cinemaMode);
+      document.getElementById('btn-cinema').classList.toggle('text-slate-950', state.cinemaMode);
+      showToast(state.cinemaMode ? 'IMAX Cinema Director Camera ON' : 'Manual Camera Control');
+    };
+    document.getElementById('btn-pyramid').onclick = () => togglePyramidMode();
+    document.getElementById('btn-exit-pyramid').onclick = () => togglePyramidMode();
+    document.getElementById('btn-drawer').onclick = () => { state.drawerOpen = !state.drawerOpen; document.getElementById('right-drawer').classList.toggle('hidden', !state.drawerOpen); renderDrawer(); };
+    document.getElementById('btn-close-drawer').onclick = () => { state.drawerOpen = false; document.getElementById('right-drawer').classList.add('hidden'); };
+    document.getElementById('btn-reset').onclick = () => {
+      state.rotX = state.stage === 'human' ? 0.08 : 0.34; state.rotY = 0.28; state.zoom = 1.0;
+      state.singularity = false; state.gravityWell = false; state.habitableZone = false; state.explodeTarget = 0; state.sizeScaleMode = false; state.viewMode = 'standard';
+      wellMesh.visible = false; habRing.visible = false; trajGroup.visible = false; state.trajectoryTarget = null;
+      applyVisualMode(); renderDrawer();
+    };
+    ['dossier', 'modes', 'quiz', '6hand'].forEach((t) => { document.getElementById('tab-' + t).onclick = () => { state.drawerTab = t; renderDrawer(); }; });
+    document.getElementById('year-slider').oninput = (e) => { state.year = Number(e.target.value); document.getElementById('year-val').textContent = state.year; };
+    document.getElementById('btn-1977').onclick = () => { state.year = 1977; document.getElementById('year-slider').value = 1977; document.getElementById('year-val').textContent = 1977; };
+    document.getElementById('btn-2026').onclick = () => { state.year = 2026; document.getElementById('year-slider').value = 2026; document.getElementById('year-val').textContent = 2026; };
+    window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && state.pyramidMode) togglePyramidMode(); });
+
+    document.getElementById('btn-voice').onclick = () => {
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) { handleVoiceCommand('Black Hole'); return; }
+      const rec = new SR(); rec.lang = 'en-IN'; rec.interimResults = false;
+      document.getElementById('voice-btn-label').textContent = 'Listening…';
+      rec.onresult = (ev) => handleVoiceCommand(ev.results[0][0].transcript);
+      rec.onend = () => { document.getElementById('voice-btn-label').textContent = 'Voice'; };
+      rec.onerror = () => { document.getElementById('voice-btn-label').textContent = 'Voice'; };
+      try { rec.start(); } catch (_e) {}
+    };
+
+    let dragging = false, lx = 0, ly = 0;
+    root.addEventListener('pointerdown', (e) => { dragging = true; lx = e.clientX; ly = e.clientY; });
+    window.addEventListener('pointermove', (e) => {
+      if (!dragging) return;
+      state.rotY += (e.clientX - lx) * 0.008;
+      state.rotX = Math.max(-1.2, Math.min(1.2, state.rotX + (e.clientY - ly) * 0.008));
+      lx = e.clientX; ly = e.clientY;
+    });
+    window.addEventListener('pointerup', () => { dragging = false; });
+    root.addEventListener('wheel', (e) => { state.zoom = Math.max(0.45, Math.min(3.5, state.zoom - e.deltaY * 0.0012)); }, { passive: true });
+    window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
+
+    // =========================================================================
+    // 6. 60 FPS GPU ANIMATION LOOP
+    // =========================================================================
+    const clock = new THREE.Clock();
+    const wellPosAttr = wellGeo.attributes.position;
+    const windPosAttr = windGeo.attributes.position;
+    const bloodPosAttr = bloodGeo.attributes.position;
+    const sunWorldVec = new THREE.Vector3();
+
+    function renderFrame() {
+      if (!state.pyramidMode) { renderer.render(scene, camera); return; }
+      const w = window.innerWidth, h = window.innerHeight;
+      const s = Math.floor(Math.min(w, h) * 0.34), cx = Math.floor(w / 2), cy = Math.floor(h / 2), gap = Math.floor(s * 0.14);
+      renderer.setClearColor(0x000000, 1); renderer.setScissorTest(false); renderer.clear(); renderer.setScissorTest(true);
+      camera.aspect = 1; camera.updateProjectionMatrix();
+      [{ x: cx - s / 2, y: cy + gap, r: 0 }, { x: cx - s / 2, y: cy - s - gap, r: Math.PI }, { x: cx - s - gap, y: cy - s / 2, r: Math.PI / 2 }, { x: cx + gap, y: cy - s / 2, r: -Math.PI / 2 }].forEach((q) => {
+        renderer.setViewport(q.x, q.y, s, s); renderer.setScissor(q.x, q.y, s, s);
+        worldGroup.rotation.z = q.r; renderer.render(scene, camera);
+      });
+      worldGroup.rotation.z = 0; camera.aspect = w / h; camera.updateProjectionMatrix();
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const dt = Math.min(clock.getDelta(), 0.05);
+      const elapsed = clock.elapsedTime;
+      state.explodeCurr += (state.explodeTarget - state.explodeCurr) * 0.08;
+
+      // Update world-space Sun position for accurate per-pixel planet day/night terminators!
+      worldGroup.getWorldPosition(sunWorldVec);
+      for (let i = 0; i < planetShaderMats.length; i++) {
+        planetShaderMats[i].uniforms.uTime.value = elapsed;
+        planetShaderMats[i].uniforms.uSunWorldPos.value.copy(sunWorldVec);
+      }
+      earthCloudMat.uniforms.uTime.value = elapsed;
+      earthCloudMat.uniforms.uSunWorldPos.value.copy(sunWorldVec);
+      accretionMat.uniforms.uTime.value = elapsed;
+      saturnRingMat.uniforms.uSunWorldPos.value.copy(sunWorldVec);
+      if (bodyMeshes.saturn) bodyMeshes.saturn.holder.getWorldPosition(saturnRingMat.uniforms.uSaturnWorldPos.value);
+
+      if (state.stage === 'solar') {
+        const speedBoost = state.singularity ? 3.2 : 1.0;
+        const yearOff = (state.year - 2026) * 0.45;
+        BODIES.forEach((b, idx) => {
+          const e = bodyMeshes[b.id];
+          if (state.sizeScaleMode) {
+            e.holder.position.set(-4.6 + idx * 1.02, 0, 0);
+            e.holder.scale.setScalar(b.scaleR / b.r);
+            if (orbitLines[b.id]) orbitLines[b.id].visible = false;
+          } else {
+            if (state.introPhase === 'done') e.holder.scale.setScalar(1.0);
+            if (orbitLines[b.id]) orbitLines[b.id].visible = true;
+            if (b.dist > 0) {
+              e.angle += dt * b.speed * 0.22 * speedBoost;
+              const a = e.angle + yearOff * b.speed;
+              const inclRad = (b.incl * Math.PI) / 180;
+              e.holder.position.set(
+                Math.cos(a) * b.dist,
+                Math.sin(a) * b.dist * Math.sin(inclRad) + state.explodeCurr * (idx - 4.5) * 0.36,
+                Math.sin(a) * b.dist * (b.id === 'pluto' ? 0.88 : 1.0)
+              );
+            }
+          }
+          e.outer.rotation.y += dt * (b.id === 'sun' ? 0.12 : 0.36);
+        });
+        if (earthCloudMesh) earthCloudMesh.rotation.y += dt * 0.46;
+        if (earthMoonPivot) earthMoonPivot.rotation.y += dt * 1.45;
+        for (let m = 0; m < moonPivots.length; m++) moonPivots[m].piv.rotation.y += dt * moonPivots[m].speed * speedBoost;
+        dwarfBodies.forEach((d) => {
+          d.angle += dt * d.speed * 0.22 * speedBoost;
+          const ir = (d.incl * Math.PI) / 180;
+          d.mesh.position.set(Math.cos(d.angle) * d.dist, Math.sin(d.angle) * d.dist * Math.sin(ir), Math.sin(d.angle) * d.dist);
+          d.mesh.visible = !state.sizeScaleMode;
+        });
+        kuiperBelt.rotation.y += dt * 0.012 * speedBoost;
+        kuiperBelt.visible = !state.sizeScaleMode;
+        asteroidBelt.rotation.y += dt * 0.045 * speedBoost;
+        asteroidBelt.visible = !state.sizeScaleMode;
+
+        if (state.singularity) {
+          accretionDisk.rotation.z -= dt * 0.8;
+          photonSphere.lookAt(camera.position);
+        }
+
+        for (let i = 0; i < windCount; i++) {
+          const w = windData[i];
+          if (state.singularity) { w.r -= dt * w.sp * 1.5; w.a += dt * (1.8 / Math.max(0.6, w.r)); if (w.r < 0.5) w.r = 6.2; }
+          else { w.r += dt * w.sp; if (w.r > 6.2) w.r = 0.72; }
+          windPosAttr.setXYZ(i, Math.cos(w.a) * w.r, w.y, Math.sin(w.a) * w.r);
+        }
+        windPosAttr.needsUpdate = true;
+        solarWind.visible = !state.sizeScaleMode;
+
+        cometAngle += dt * 0.34;
+        cometGroup.position.set(Math.cos(cometAngle) * 4.1 + 1.2, Math.sin(cometAngle) * 0.95, Math.sin(cometAngle) * 2.4);
+        cometGroup.lookAt(0, 0, 0);
+        cometGroup.visible = !state.sizeScaleMode;
+
+        if (state.gravityWell) {
+          const jPos = bodyMeshes.jupiter.holder.position, sPos = bodyMeshes.saturn.holder.position;
+          const sunDepth = state.singularity ? 3.9 : 1.6;
+          for (let i = 0; i < wellPosAttr.count; i++) {
+            const x = wellPosAttr.getX(i), z = wellPosAttr.getZ(i);
+            const rSun = Math.sqrt(x * x + z * z) + (state.singularity ? 0.35 : 0.45);
+            const rJup = Math.sqrt((x - jPos.x) ** 2 + (z - jPos.z) ** 2) + 0.55;
+            const rSat = Math.sqrt((x - sPos.x) ** 2 + (z - sPos.z) ** 2) + 0.6;
+            wellPosAttr.setY(i, -(sunDepth / rSun) - (0.38 / rJup) - (0.25 / rSat));
+          }
+          wellPosAttr.needsUpdate = true;
+        }
+
+        if (state.photonActive) {
+          state.photonRadius += dt * 1.25;
+          photonRing.scale.setScalar(state.photonRadius);
+          document.getElementById('photon-hud').textContent = `c = 299,792 km/s · T+${((state.photonRadius / 1.98) * 8.3).toFixed(1)} min`;
+          if (state.photonRadius > 7.0) { state.photonActive = false; photonRing.visible = false; document.getElementById('photon-hud').classList.add('hidden'); }
+        }
+
+        if (trajGroup.visible && trajCurvePts.length > 2) {
+          probeProgress = (probeProgress + dt * 0.22) % 1;
+          const i = Math.min(trajCurvePts.length - 2, Math.floor(probeProgress * (trajCurvePts.length - 1)));
+          probeMesh.position.copy(trajCurvePts[i]); probeMesh.lookAt(trajCurvePts[i + 1]); probeMesh.rotateX(Math.PI / 2);
+        }
+      } else {
+        const beatFreq = (state.heartBpm / 60) * Math.PI * 2;
+        const pulse = 1 + 0.16 * Math.pow(Math.max(0, Math.sin(elapsed * beatFreq)), 4);
+        heartMesh.scale.set(0.9 * pulse, 1.15 * pulse, 0.85 * pulse);
+        const breath = 1 + 0.055 * Math.sin(elapsed * 1.6);
+        lungsGroup.scale.set(breath, 1 + 0.03 * Math.sin(elapsed * 1.6), breath);
+
+        const bpmFactor = state.heartBpm / 72;
+        for (let i = 0; i < bloodCount; i++) {
+          const bm = bloodMeta[i]; bm.t = (bm.t + dt * bm.sp * bpmFactor) % 1;
+          const dir = bm.arterial ? bm.t : (1 - bm.t);
+          let bx = 0.06, by = 0.22, bz = 0.14;
+          if (bm.lane === 0) { bx = (bm.arterial ? 0.08 : -0.08); by = 0.22 + dir * 1.0; bz = 0.05; }
+          else if (bm.lane === 1) { bx = -0.15 - dir * 0.62; by = 0.45 - dir * 0.95; bz = 0.02; }
+          else if (bm.lane === 2) { bx = 0.15 + dir * 0.62; by = 0.45 - dir * 0.95; bz = 0.02; }
+          else { bx = (bm.arterial ? 0.22 : -0.22); by = 0.15 - dir * 2.15; bz = 0.02; }
+          bloodPosAttr.setXYZ(i, bx, by, bz);
+        }
+        bloodPosAttr.needsUpdate = true;
+
+        synapsePulses.forEach((sp) => { sp.phase = (sp.phase + dt * 0.95) % 1; sp.mesh.position.set(0, -0.65 + sp.phase * 1.85, -0.18); });
+        cellGroup.rotation.y += dt * 0.25; dnaGroup.rotation.y += dt * 1.1;
+        drawEcg(dt);
+      }
+
+      if (state.cinemaMode) {
+        state.rotX = 0.26 + Math.sin(elapsed * 0.22) * 0.16;
+        state.rotY += dt * 0.14;
+        state.zoom = 1.08 + Math.sin(elapsed * 0.18) * 0.22;
+      }
+      worldGroup.rotation.x = state.rotX;
+      worldGroup.rotation.y = state.rotY + elapsed * 0.026;
+      const targetZ = (state.stage === 'human' ? 4.8 : 9.0) / state.zoom;
+      camera.position.z += (targetZ - camera.position.z) * 0.1;
+      camera.lookAt(0, 0, 0);
+      stars.rotation.y += dt * 0.004;
+      renderFrame();
+    }
+
+    renderQuickBar();
+    applyVisualMode();
+    animate();
+  })();
+  </script>
+</body>
+</html>
