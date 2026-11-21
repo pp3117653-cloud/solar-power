@@ -72,6 +72,65 @@ function createSoftParticleSprite(): THREE.CanvasTexture {
   return tex;
 }
 
+function createDeepSpaceStarfield(): THREE.Points {
+  const count = 1800;
+  const positions = new Float32Array(count * 3);
+  const colors = new Float32Array(count * 3);
+  const sizes = new Float32Array(count);
+  const palette = [
+    new THREE.Color(0xffffff),
+    new THREE.Color(0xb9d8ff),
+    new THREE.Color(0xffd6a1),
+    new THREE.Color(0x8fc7ff),
+  ];
+
+  for (let i = 0; i < count; i++) {
+    const radius = 10 + Math.random() * 26;
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.acos(2 * Math.random() - 1);
+    positions[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
+    positions[i * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
+    positions[i * 3 + 2] = radius * Math.cos(phi);
+    const color = palette[Math.floor(Math.random() * palette.length)];
+    colors[i * 3] = color.r;
+    colors[i * 3 + 1] = color.g;
+    colors[i * 3 + 2] = color.b;
+    sizes[i] = 0.018 + Math.pow(Math.random(), 5) * 0.075;
+  }
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+  const material = new THREE.ShaderMaterial({
+    vertexColors: true,
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    uniforms: { uPixelRatio: { value: Math.min(window.devicePixelRatio || 1, 2) } },
+    vertexShader: `
+      attribute float size;
+      varying vec3 vColor;
+      uniform float uPixelRatio;
+      void main() {
+        vColor = color;
+        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+        gl_PointSize = size * uPixelRatio * (260.0 / max(1.0, -mvPosition.z));
+        gl_Position = projectionMatrix * mvPosition;
+      }
+    `,
+    fragmentShader: `
+      varying vec3 vColor;
+      void main() {
+        float d = distance(gl_PointCoord, vec2(0.5));
+        float glow = smoothstep(0.5, 0.0, d);
+        gl_FragColor = vec4(vColor, glow * 0.9);
+      }
+    `,
+  });
+  return new THREE.Points(geometry, material);
+}
+
 export const HologramCanvas: React.FC<HologramCanvasProps> = ({
   activeModelId,
   heartBpm,
@@ -216,6 +275,10 @@ export const HologramCanvas: React.FC<HologramCanvasProps> = ({
     const bgHoloColor = new THREE.Color(0x000000);
     scene.background = bgDefaultColor;
     scene.fog = null;
+
+    const starfield = createDeepSpaceStarfield();
+    starfield.renderOrder = -10;
+    scene.add(starfield);
 
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
     camera.position.set(0, 0.2, 6.2);
@@ -671,6 +734,8 @@ export const HologramCanvas: React.FC<HologramCanvasProps> = ({
       timer.update(timestamp);
       const dt = Math.min(timer.getDelta(), 0.05);
       const elapsed = timer.getElapsed();
+      starfield.rotation.y = elapsed * 0.0025;
+      starfield.rotation.x = Math.sin(elapsed * 0.018) * 0.012;
 
       const reducedMotion =
         typeof window !== 'undefined' &&

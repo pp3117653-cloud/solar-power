@@ -390,6 +390,32 @@ function buildSolarSystemModel(maxAnisotropy: number): BuiltHologramModel {
       createAtmosphereRimMaterial(0xffa526, 1.32)
     )
   );
+  // Layered corona shells create a soft, solar-scale falloff without a costly
+  // post-processing bloom pass. Each shell has a different fresnel profile.
+  sunGroup.add(
+    new THREE.Mesh(
+      new THREE.SphereGeometry(0.88, 32, 24),
+      createAtmosphereRimMaterial(0xff6b1a, 0.48)
+    )
+  );
+  sunGroup.add(
+    new THREE.Mesh(
+      new THREE.SphereGeometry(1.04, 28, 20),
+      createAtmosphereRimMaterial(0xffc04a, 0.22)
+    )
+  );
+  const solarFlareRing = new THREE.Mesh(
+    new THREE.TorusGeometry(0.88, 0.012, 8, 96),
+    new THREE.MeshBasicMaterial({
+      color: 0xff9f2d,
+      transparent: true,
+      opacity: 0.42,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    })
+  );
+  solarFlareRing.rotation.x = Math.PI * 0.28;
+  sunGroup.add(solarFlareRing);
   sunGroup.add(new THREE.PointLight(0xfff7e8, 3.8, 16, 1.1));
   rootGroup.add(sunGroup);
   registerSubPart(sunGroup, spec.parts[0], explodableParts, raycastTargets);
@@ -600,6 +626,8 @@ function buildSolarSystemModel(maxAnisotropy: number): BuiltHologramModel {
     update: (elapsed, _dt, _bpm, explodeAmount) => {
       sunUniforms.uTime.value = elapsed;
       sunMesh.rotation.y = elapsed * 0.16;
+      solarFlareRing.rotation.z = elapsed * 0.08;
+      solarFlareRing.scale.setScalar(1 + Math.sin(elapsed * 1.7) * 0.018);
       asteroidBelt.rotation.y = elapsed * 0.06;
 
       for (const p of planetOrbitData) {
