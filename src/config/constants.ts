@@ -65,6 +65,7 @@ export interface JarvisSettings {
   voiceMode: 'push-to-talk' | 'hands-free';
   voiceLang: 'en-IN' | 'hi-IN';
   spokenReplies: boolean; // default false
+  presenterMode: boolean; // track up to six hands when enabled
   muted: boolean;
   volume: number; // 0 to 1, default 0.6
   ambientHum: boolean; // default false
@@ -84,7 +85,8 @@ export const DEFAULT_SETTINGS: JarvisSettings = {
   handSensitivity: 1.0,
   voiceMode: 'push-to-talk',
   voiceLang: 'en-IN',
-  spokenReplies: true,
+  spokenReplies: false,
+  presenterMode: false,
   muted: false,
   volume: 0.6,
   ambientHum: false,

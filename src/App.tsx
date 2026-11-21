@@ -1626,6 +1626,7 @@ export default function App() {
         hiddenByHologram={hologramMode}
         cameraId={settings.cameraId}
         mirrorPreview={settings.mirrorPreview}
+        presenterMode={settings.presenterMode}
         simMode={simMode}
         retryNonce={retryNonce}
         onToggleVisible={() => setCameraVisible((v) => !v)}

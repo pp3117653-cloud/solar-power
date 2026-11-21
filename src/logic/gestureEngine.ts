@@ -14,6 +14,8 @@ export type ActiveGestureType =
   | 'ZOOM'
   | 'DUAL_CONTROL'
   | 'DRAG'
+  | 'PAN'
+  | 'POINT_INSPECT'
   | 'EXPLODE'
   | 'ASSEMBLE'
   | 'SWIPE_LEFT'
@@ -656,7 +658,7 @@ export class GestureStateMachine {
         out.activeGesture = 'FIST_PUNCH_SELECT';
         out.gestureLabel = 'Fist Punch Select';
         out.fistPunchTriggered = true;
-        out.pointerScreen = { x: palm.x, y: palm.y };
+        out.pointerScreen = { x: this.smoothedPalmX, y: this.smoothedPalmY };
       }
       this.resetAnchor = null;
       this.openPalmStableFrames = 0;

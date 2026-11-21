@@ -96,6 +96,19 @@ test('Hand loss < 300 ms keeps state; >= 300 ms resets internal state', () => {
   assert.equal(fAfterReset.resetProgress, 0);
 });
 
+test('A held single fist for 1.2 seconds never throws', () => {
+  const machine = new GestureStateMachine();
+  const fist = {
+    handedness: 'Right' as const,
+    landmarks: createSyntheticHandLandmarks('FIST', 0.5, 0.5),
+  };
+  assert.doesNotThrow(() => {
+    for (let time = 0; time <= 1200; time += 100) {
+      machine.processFrame([fist], time);
+    }
+  });
+});
+
 test('GestureStateMachine detects two-hand spread EXPLODE, close ASSEMBLE, and continuous 0..1 mapping', () => {
   const machine = new GestureStateMachine();
   // handScale for synthetic hand is 0.12.

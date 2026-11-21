@@ -13,6 +13,7 @@
 
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { SCIENCE_MODELS, SubPartInfo } from '../config/constants';
 import {
   AnatomyLayerKey,
@@ -946,7 +947,10 @@ export function buildHumanBodyModel(_maxAnisotropy = 4): BuiltHologramModel {
   photorealGroup.visible = false;
   organismRoot.add(photorealGroup);
 
+  const dracoLoader = new DRACOLoader();
+  dracoLoader.setDecoderPath('/draco/');
   const gltfLoader = new GLTFLoader();
+  gltfLoader.setDRACOLoader(dracoLoader);
   const mountPhotorealGltf = (url: string) => {
     gltfLoader.load(
       url,
@@ -971,7 +975,7 @@ export function buildHumanBodyModel(_maxAnisotropy = 4): BuiltHologramModel {
       }
     );
   };
-  mountPhotorealGltf('/models/human_body_photoreal.glb');
+  mountPhotorealGltf('/models/human/body.glb');
 
   // Scale organism cleanly to fit Jarvis camera
   organismRoot.scale.setScalar(0.95);
@@ -981,11 +985,11 @@ export function buildHumanBodyModel(_maxAnisotropy = 4): BuiltHologramModel {
   let currentScaleMode: AnatomyScaleMode = 'organism';
 
   const applyAnatomyState = (
-    layers: Record<AnatomyLayerKey, boolean>,
-    scaleMode: AnatomyScaleMode
+    layers?: Record<AnatomyLayerKey, boolean>,
+    scaleMode?: AnatomyScaleMode
   ) => {
-    currentLayers = layers;
-    currentScaleMode = scaleMode;
+    currentLayers = layers ? { ...DEFAULT_ANATOMY_LAYERS, ...layers } : { ...DEFAULT_ANATOMY_LAYERS };
+    currentScaleMode = scaleMode ?? 'organism';
   };
 
   return {

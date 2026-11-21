@@ -35,6 +35,8 @@ export async function searchSketchfabAnatomyModels(
 ): Promise<SketchfabAnatomyModel[]> {
   const trimmedQuery = query.trim();
   if (!trimmedQuery) return [];
+  const apiKey = import.meta.env.VITE_SKETCHFAB_API_KEY as string | undefined;
+  if (!apiKey || (typeof navigator !== 'undefined' && !navigator.onLine)) return [];
 
   try {
     const params = new URLSearchParams({
@@ -43,7 +45,10 @@ export async function searchSketchfabAnatomyModels(
       downloadable: 'true',
       count: String(Math.min(Math.max(limit, 1), 12)),
     });
-    const response = await fetch(`https://api.sketchfab.com/v3/search?${params.toString()}`);
+    const response = await fetch(`https://api.sketchfab.com/v3/search?${params.toString()}`, {
+      headers: { Authorization: `Token ${apiKey}` },
+      signal: AbortSignal.timeout(4000),
+    });
     if (!response.ok) return [];
 
     const payload = (await response.json()) as {

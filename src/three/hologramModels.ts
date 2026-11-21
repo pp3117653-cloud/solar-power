@@ -409,11 +409,11 @@ function buildSolarSystemModel(maxAnisotropy: number): BuiltHologramModel {
     { idx: 9, id: 'pluto', radius: 4.58, size: 0.082, speed: 0.14, tilt: 1.35, axialTilt: 2.13, periodDays: 90560, L0: 238.93, orbitCol: 0x94a3b8 },
   ];
 
-  // 1,200 GPU-Instanced Main Asteroid Belt between Mars & Jupiter (1 draw call)
-  const asteroidCount = 1200;
+  // 600 GPU-instanced, dark irregular rocks between Mars and Jupiter.
+  const asteroidCount = 600;
   const asteroidBelt = new THREE.InstancedMesh(
-    new THREE.DodecahedronGeometry(0.013, 0),
-    new THREE.MeshStandardMaterial({ color: 0x9ca3af, roughness: 0.88, metalness: 0.15 }),
+    new THREE.DodecahedronGeometry(0.015, 0),
+    new THREE.MeshStandardMaterial({ color: 0x353b43, roughness: 0.95, metalness: 0.05 }),
     asteroidCount
   );
   const dummy = new THREE.Object3D();
@@ -423,7 +423,8 @@ function buildSolarSystemModel(maxAnisotropy: number): BuiltHologramModel {
     const y = (hash2(i, 3, 205) - 0.5) * 0.09;
     dummy.position.set(Math.cos(a) * r, y, Math.sin(a) * r);
     dummy.rotation.set(hash2(i, 4, 207) * 6, hash2(i, 5, 209) * 6, 0);
-    dummy.scale.setScalar(0.45 + hash2(i, 6, 211) * 1.25);
+    // Base radius 0.015 -> 0.010..0.030 world units.
+    dummy.scale.setScalar(2 / 3 + hash2(i, 6, 211) * 4 / 3);
     dummy.updateMatrix();
     asteroidBelt.setMatrixAt(i, dummy.matrix);
   }

@@ -206,6 +206,16 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({
             />
           </label>
 
+          <label className="flex items-center justify-between cursor-pointer">
+            <span className="text-[var(--text)]">Presenter mode (6 hands)</span>
+            <input
+              type="checkbox"
+              checked={settings.presenterMode}
+              onChange={(e) => onUpdateSettings({ presenterMode: e.target.checked })}
+              className="w-4 h-4 accent-[#7dd3fc]"
+            />
+          </label>
+
           <form onSubmit={handleCmdSubmit} className="flex items-center gap-1.5">
             <label htmlFor="settings-typed-command" className="sr-only">
               Type a command

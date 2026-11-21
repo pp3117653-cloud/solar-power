@@ -329,6 +329,21 @@ export const HologramCanvas: React.FC<HologramCanvasProps> = ({
       stageGroup.add(m.rootGroup);
     });
 
+    // Fit the largest model once at startup so outer planets and anatomy layers
+    // remain visible with a small breathing margin instead of sitting under HUDs.
+    const sceneBounds = new THREE.Box3().setFromObject(stageGroup);
+    const sceneSphere = sceneBounds.getBoundingSphere(new THREE.Sphere());
+    const verticalHalfFov = THREE.MathUtils.degToRad(camera.fov * 0.5);
+    const fitDistance = (sceneSphere.radius * 1.15) / Math.max(0.01, Math.tan(verticalHalfFov));
+    camera.position.set(
+      sceneSphere.center.x,
+      sceneSphere.center.y + sceneSphere.radius * 0.04,
+      Math.max(6.2, fitDistance)
+    );
+    camera.far = Math.max(100, camera.position.z + sceneSphere.radius * 4);
+    camera.lookAt(sceneSphere.center);
+    camera.updateProjectionMatrix();
+
     if (!isSoftwareGl) {
       renderer.compile(scene, camera);
     }

@@ -60,6 +60,7 @@ interface WebcamHandTrackerProps {
   hiddenByHologram: boolean;
   cameraId: string;
   mirrorPreview: boolean;
+  presenterMode: boolean;
   simMode: SimulatorPoseMode;
   retryNonce: number;
   onToggleVisible: () => void;
@@ -77,6 +78,7 @@ export const WebcamHandTracker: React.FC<WebcamHandTrackerProps> = ({
   hiddenByHologram,
   cameraId,
   mirrorPreview,
+  presenterMode,
   simMode,
   retryNonce,
   onToggleVisible,
@@ -457,7 +459,7 @@ export const WebcamHandTracker: React.FC<WebcamHandTrackerProps> = ({
       const vision = await FilesetResolver.forVisionTasks(wasmUrl);
       const commonOpts = {
         runningMode: 'VIDEO' as const,
-        numHands: 6, // 3 Presenters x 2 Hands = 6 Hands Total
+        numHands: presenterMode ? 6 : 2,
         minHandDetectionConfidence: 0.85,
         minHandPresenceConfidence: 0.85,
         minTrackingConfidence: 0.85,
