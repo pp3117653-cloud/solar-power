@@ -167,6 +167,7 @@ export const WebcamHandTracker: React.FC<WebcamHandTrackerProps> = ({
     let lastVideoTime = -1;
     let lastTimestampMs = 0;
     let lastInferenceMs = 0;
+    const inferenceIntervalMs = 1000 / 30;
 
     const getStrictlyIncreasingNow = (): number => {
       const raw = performance.now();
@@ -321,7 +322,7 @@ export const WebcamHandTracker: React.FC<WebcamHandTrackerProps> = ({
       const landmarker = handLandmarkerRef.current;
 
       if (landmarker && video && video.readyState >= 2) {
-        if (nowMs - lastInferenceMs < 55) {
+        if (nowMs - lastInferenceMs < inferenceIntervalMs) {
           scheduleNext();
           return;
         }
@@ -503,7 +504,7 @@ export const WebcamHandTracker: React.FC<WebcamHandTrackerProps> = ({
       const baseVideo: MediaTrackConstraints = {
         width: { ideal: 320, max: 320 },
         height: { ideal: 240, max: 240 },
-        frameRate: { ideal: 24, max: 30 },
+        frameRate: { ideal: 30, max: 30 },
       };
 
       const primaryConstraints: MediaStreamConstraints = {
@@ -647,8 +648,12 @@ export const WebcamHandTracker: React.FC<WebcamHandTrackerProps> = ({
         navigator.mediaDevices.removeEventListener('devicechange', handleDeviceChange);
       }
       stopCurrentStream();
+      if (handLandmarkerRef.current) {
+        handLandmarkerRef.current.close();
+        handLandmarkerRef.current = null;
+      }
     };
-  }, [cameraId, retryNonce, internalRetry, updateStatus]);
+  }, [cameraId, retryNonce, internalRetry, presenterMode, updateStatus]);
 
   // Close landmarker on component unmount
   useEffect(() => {
