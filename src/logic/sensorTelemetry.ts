@@ -25,6 +25,7 @@ export interface PresenterZoneState {
 export interface SensorVerificationSnapshot {
   targetSensorsPerSec: number;
   measuredSensorsPerSec: number;
+  sampleRateHz: number;
   totalHands: number;
   totalLandmarks: number;
   coopActive: boolean;
@@ -166,10 +167,13 @@ export class SensorVerificationEngine {
     const p2 = evalZone(2, 'CENTER', 'Select & Lock', center);
     const p3 = evalZone(3, 'RIGHT', 'Modes & Reset', right);
     const totalHands = Math.min(6, hands.length);
+    const sampleRateHz = 1 / dtSec;
+    const measuredSensorsPerSec = Math.round(totalHands * 21 * sampleRateHz);
 
     return {
       targetSensorsPerSec: TARGET_SENSORS_PER_SEC,
-      measuredSensorsPerSec: TARGET_SENSORS_PER_SEC,
+      measuredSensorsPerSec,
+      sampleRateHz: Number(sampleRateHz.toFixed(1)),
       totalHands,
       totalLandmarks: totalHands * 21,
       coopActive: totalHands >= 3,

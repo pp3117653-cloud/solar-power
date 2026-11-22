@@ -366,14 +366,17 @@ export const InfoDrawer: React.FC<InfoDrawerProps> = ({
           <p className="text-[var(--text)]">{model.whatItTeaches}</p>
         </div>
 
-        {/* 4-Hand Co-Op & 274 Sensors/sec Verification Card */}
+        {/* Measured hand-landmark throughput and multi-presenter verification */}
         {sensorSnapshot && (
           <div className="p-3 rounded-[12px] bg-[var(--surface)] border border-[var(--border)] space-y-2 text-[11px] tabular-nums">
             <div className="flex items-center justify-between">
-              <span className="font-semibold text-[var(--text)]">4-Hand Sensor Verification</span>
+              <span className="font-semibold text-[var(--text)]">Hand Sensor Telemetry</span>
               <span className="text-[#22c55e] font-semibold">
-                {sensorSnapshot.measuredSensorsPerSec} sensors/sec
+                {sensorSnapshot.measuredSensorsPerSec} points/sec
               </span>
+            </div>
+            <div className="text-[var(--muted)]">
+              Observed from {sensorSnapshot.totalHands} hand{sensorSnapshot.totalHands === 1 ? '' : 's'} at {sensorSnapshot.sampleRateHz} Hz · benchmark {sensorSnapshot.targetSensorsPerSec} points/sec
             </div>
             <div className="grid grid-cols-2 gap-1.5">
               <div className="p-2 rounded-[8px] bg-black/30 border border-white/5">
@@ -460,6 +463,24 @@ export const InfoDrawer: React.FC<InfoDrawerProps> = ({
                 </button>
               )}
             </div>
+
+            <div className="grid grid-cols-2 gap-1.5 text-[10px]">
+              <div className="p-2 rounded-[8px] bg-black/30 border border-[var(--border)]">
+                <div className="text-[var(--muted)]">Data state</div>
+                <div className="text-[var(--text)] font-medium uppercase tracking-[0.08em]">
+                  {liveTelemetry.status === 'live' ? 'Live' : liveTelemetry.status === 'partial' ? 'Partial' : 'Offline reference'}
+                </div>
+              </div>
+              <div className="p-2 rounded-[8px] bg-black/30 border border-[var(--border)]">
+                <div className="text-[var(--muted)]">Last checked</div>
+                <div className="text-[var(--text)] font-medium">
+                  {new Date(liveTelemetry.lastUpdatedIso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                </div>
+              </div>
+            </div>
+            <p className="text-[10px] leading-relaxed text-[var(--faint)]">
+              Sources: NASA EPIC, NASA NeoWs, NASA DONKI, and live ISS position feed. “Offline reference” values are illustrative fallbacks and are never live observations.
+            </p>
 
             {activeModelId === 'solar' && (
               <div className="space-y-2 text-[11px] tabular-nums">
